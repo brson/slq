@@ -28,16 +28,16 @@ fn process_instruction(
         Instruction::CreateVault(instr) => {
             let payer = next_account_info(accounts_iter)?;
             let vault = next_account_info(accounts_iter)?;
-
-            todo!()
+            instr.exec(program_id, payer, vault)?;
         }
         Instruction::DepositToVault(instr) => {
             let payer = next_account_info(accounts_iter)?;
             let vault = next_account_info(accounts_iter)?;
-
-            todo!()
+            instr.exec(program_id, payer, vault)?;
         }
     }
+
+    Ok(())
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
@@ -53,7 +53,7 @@ pub enum Instruction {
 /// - 1: vault: pda, writeable, owner=program?
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct CreateVault {
-    vault_bump_seed: u8,
+    pub vault_bump_seed: u8,
 }
 
 /// # Accounts
@@ -62,8 +62,18 @@ pub struct CreateVault {
 /// - 1: vault: pda, writeable, owner=program
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct DepositToVault {
-    vault_bump_seed: u8,
-    amount: u64,
+    pub vault_bump_seed: u8,
+    pub amount: u64,
 }
 
+impl CreateVault {
+    fn exec(&self, program_id: &Pubkey, payer: &AccountInfo, vault: &AccountInfo) -> ProgramResult {
+        todo!()
+    }
+}
 
+impl DepositToVault {
+    fn exec(&self, program_id: &Pubkey, payer: &AccountInfo, vault: &AccountInfo) -> ProgramResult {
+        todo!()
+    }
+}

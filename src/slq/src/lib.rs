@@ -49,8 +49,8 @@ pub enum Instruction {
 
 /// # Accounts
 ///
-/// - 0: payer: signer, writeable
-/// - 1: vault: pda, writeable, owner=program?
+/// - 0: payer: signer, writable
+/// - 1: vault: pda, writable, owner=program?
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct CreateVault {
     pub vault_bump_seed: u8,
@@ -58,8 +58,8 @@ pub struct CreateVault {
 
 /// # Accounts
 ///
-/// - 0: payer: signer, writeable
-/// - 1: vault: pda, writeable, owner=program
+/// - 0: payer: signer, writable
+/// - 1: vault: pda, writable, owner=program
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct DepositToVault {
     pub vault_bump_seed: u8,
@@ -68,6 +68,13 @@ pub struct DepositToVault {
 
 impl CreateVault {
     fn exec(&self, program_id: &Pubkey, payer: &AccountInfo, vault: &AccountInfo) -> ProgramResult {
+        assert!(payer.is_signer);
+        assert!(payer.is_writable);
+        // todo vault asserts
+
+        let vault_seeds = &[b"vault", payer.key.as_ref()];
+        let (vault_, vault_bump_seed_) = Pubkey::find_program_address(vault_seeds, program_id);
+
         todo!()
     }
 }

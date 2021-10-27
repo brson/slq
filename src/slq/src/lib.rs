@@ -72,8 +72,9 @@ impl CreateVault {
         assert!(payer.is_writable);
         // todo vault asserts
 
-        let vault_seeds = &[b"vault", payer.key.as_ref()];
-        let (vault_, vault_bump_seed_) = Pubkey::find_program_address(vault_seeds, program_id);
+        let (vault_, vault_bump_seed_) = vault_pda(program_id, payer.key);
+        assert_eq!(vault.key, &vault_);
+        assert_eq!(self.vault_bump_seed, vault_bump_seed_);
 
         todo!()
     }
@@ -83,4 +84,11 @@ impl DepositToVault {
     fn exec(&self, program_id: &Pubkey, payer: &AccountInfo, vault: &AccountInfo) -> ProgramResult {
         todo!()
     }
+}
+
+pub fn vault_pda(program_id: &Pubkey, payer: &Pubkey) -> (Pubkey, u8) {
+    let vault_seeds = &[b"vault", payer.as_ref()];
+    let (vault, vault_bump_seed) = Pubkey::find_program_address(vault_seeds, program_id);
+
+    (vault, vault_bump_seed)
 }

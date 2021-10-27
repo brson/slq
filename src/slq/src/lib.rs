@@ -74,11 +74,12 @@ pub struct DepositToVault {
 }
 
 impl CreateVault {
-    fn exec<'accounts>(&self,
-                program_id: &Pubkey,
-                payer: &AccountInfo<'accounts>,
-                vault: &AccountInfo<'accounts>,
-                system_program: &AccountInfo) -> ProgramResult
+    fn exec<'accounts>(
+        &self,
+        program_id: &Pubkey,
+        payer: &AccountInfo<'accounts>,
+        vault: &AccountInfo<'accounts>,
+        system_program: &AccountInfo) -> ProgramResult
     {
         assert!(payer.is_signer);
         assert!(payer.is_writable);
@@ -117,11 +118,12 @@ impl CreateVault {
 }
 
 impl DepositToVault {
-    fn exec(&self,
-            program_id: &Pubkey,
-            payer: &AccountInfo,
-            vault: &AccountInfo,
-            system_program: &AccountInfo) -> ProgramResult
+    fn exec(
+        &self,
+        program_id: &Pubkey,
+        payer: &AccountInfo,
+        vault: &AccountInfo,
+        system_program: &AccountInfo) -> ProgramResult
     {
         todo!()
     }

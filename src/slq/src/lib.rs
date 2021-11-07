@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use borsh::{BorshSerialize, BorshDeserialize};
 use solana_program::{
     account_info::{AccountInfo, next_account_info, next_account_infos},
@@ -99,7 +99,8 @@ impl CreateVault {
             AccountMeta::new(vault_pubkey, false),
             AccountMeta::new(system_program::ID, false),
         ];
-        let data = slq_instruction.try_to_vec()?;
+        let data = slq_instruction.try_to_vec()
+            .map_err(|_| anyhow!("unable to serialize instruction"))?;
         Ok(Instruction {
             program_id: *program_id,
             accounts,
@@ -140,6 +141,7 @@ impl CreateVault {
             &[
                 &[
                     b"vault",
+                    self.vault_name.as_ref(),
                     payer.key.as_ref(),
                     &[self.vault_bump_seed],
                 ],

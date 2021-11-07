@@ -2450,6 +2450,7 @@ dependencies = [
  "borsh-derive",
  "env_logger 0.9.0",
  "log",
+ "slq",
  "solana-cli-config",
  "solana-client",
  "solana-sdk",

@@ -3,7 +3,6 @@
 use borsh::{BorshSerialize, BorshDeserialize};
 use solana_program::{
     account_info::{AccountInfo, next_account_info, next_account_infos},
-    entrypoint,
     entrypoint::ProgramResult,
     program_error::ProgramError,
     pubkey::Pubkey,
@@ -14,7 +13,12 @@ use solana_program::{
 };
 use std::convert::{TryFrom, TryInto};
 
-entrypoint!(process_instruction);
+#[cfg(not(feature = "no-entrypoint"))]
+mod entrypoint {
+    use solana_program::entrypoint;
+    use super::process_instruction;
+    entrypoint!(process_instruction);
+}
 
 fn process_instruction(
     program_id: &Pubkey,

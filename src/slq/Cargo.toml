@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 no-entrypoint = []
 
 [dependencies]
+anyhow = "1.0.45"
 borsh = "0.9.0"
 borsh-derive = "0.9.0"
 solana-program = "1.8.2"

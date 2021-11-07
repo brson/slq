@@ -1,5 +1,6 @@
 #![allow(unused)]
 
+use anyhow::Result;
 use borsh::{BorshSerialize, BorshDeserialize};
 use solana_program::{
     account_info::{AccountInfo, next_account_info, next_account_infos},
@@ -11,6 +12,7 @@ use solana_program::{
     program::invoke_signed,
     msg,
 };
+use solana_program::instruction::{AccountMeta, Instruction};
 use std::convert::{TryFrom, TryInto};
 
 #[cfg(not(feature = "no-entrypoint"))]
@@ -28,17 +30,17 @@ fn process_instruction(
     msg!("process instruction");
 
     let mut instruction_data = instruction_data;
-    let instr = Instruction::deserialize(&mut instruction_data)?;
+    let instr = SlqInstruction::deserialize(&mut instruction_data)?;
     let accounts_iter = &mut accounts.iter();
 
     match instr {
-        Instruction::CreateVault(instr) => {
+        SlqInstruction::CreateVault(instr) => {
             let payer = next_account_info(accounts_iter)?;
             let vault = next_account_info(accounts_iter)?;
             let system_program = next_account_info(accounts_iter)?;
             instr.exec(program_id, payer, vault, system_program)?;
         }
-        Instruction::DepositToVault(instr) => {
+        SlqInstruction::DepositToVault(instr) => {
             let payer = next_account_info(accounts_iter)?;
             let vault = next_account_info(accounts_iter)?;
             let system_program = next_account_info(accounts_iter)?;
@@ -50,7 +52,7 @@ fn process_instruction(
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
-pub enum Instruction {
+pub enum SlqInstruction {
     CreateVault(CreateVault),
     DepositToVault(DepositToVault),
 }
@@ -80,6 +82,31 @@ pub struct DepositToVault {
 }
 
 impl CreateVault {
+    fn build_instruction(
+        program_id: &Pubkey,
+        payer: &Pubkey,
+        vault_name: &str,
+    ) -> Result<Instruction> {
+        let (vault_pubkey, vault_bump_seed) = vault_pda(program_id, payer, vault_name);
+        let slq_instruction = SlqInstruction::CreateVault(
+            CreateVault {
+                vault_name: vault_name.to_string(),
+                vault_bump_seed,
+            }
+        );
+        let accounts = vec![
+            AccountMeta::new(*payer, true),
+            AccountMeta::new(vault_pubkey, false),
+            AccountMeta::new(system_program::ID, false),
+        ];
+        let data = slq_instruction.try_to_vec()?;
+        Ok(Instruction {
+            program_id: *program_id,
+            accounts,
+            data,
+        })
+    }
+
     fn exec<'accounts>(
         &self,
         program_id: &Pubkey,

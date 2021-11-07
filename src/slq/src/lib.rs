@@ -63,6 +63,7 @@ pub enum Instruction {
 /// - 2: system_program: executable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct CreateVault {
+    pub vault_name: String,
     pub vault_bump_seed: u8,
 }
 
@@ -73,6 +74,7 @@ pub struct CreateVault {
 /// - 2: system_program: executable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct DepositToVault {
+    pub vault_name: String,
     pub vault_bump_seed: u8,
     pub amount: u64,
 }
@@ -90,7 +92,7 @@ impl CreateVault {
         // todo vault asserts
         assert!(system_program.executable);
 
-        let (vault_, vault_bump_seed_) = vault_pda(program_id, payer.key);
+        let (vault_, vault_bump_seed_) = vault_pda(program_id, payer.key, &self.vault_name);
         assert_eq!(vault.key, &vault_);
         assert_eq!(self.vault_bump_seed, vault_bump_seed_);
 
@@ -133,8 +135,8 @@ impl DepositToVault {
     }
 }
 
-pub fn vault_pda(program_id: &Pubkey, payer: &Pubkey) -> (Pubkey, u8) {
-    let vault_seeds = &[b"vault", payer.as_ref()];
+pub fn vault_pda(program_id: &Pubkey, payer: &Pubkey, name: &str) -> (Pubkey, u8) {
+    let vault_seeds = &[b"vault", name.as_bytes(), payer.as_ref()];
     let (vault, vault_bump_seed) = Pubkey::find_program_address(vault_seeds, program_id);
 
     (vault, vault_bump_seed)

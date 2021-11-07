@@ -73,6 +73,9 @@ fn main() -> Result<()> {
     let version = client.get_version()?;
 
     let program_keypair = get_program_keypair(&client)?;
+
+
+
     
     Ok(())
 }

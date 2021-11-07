@@ -82,7 +82,7 @@ pub struct DepositToVault {
 }
 
 impl CreateVault {
-    fn build_instruction(
+    pub fn build_instruction(
         program_id: &Pubkey,
         payer: &Pubkey,
         vault_name: &str,

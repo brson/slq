@@ -6,6 +6,7 @@ use structopt::StructOpt;
 use solana_sdk::signature::{read_keypair_file, Keypair, Signer};
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::commitment_config::CommitmentConfig;
+use solana_sdk::transaction::Transaction;
 
 pub struct Config {
     json_rpc_url: String,
@@ -74,8 +75,18 @@ fn main() -> Result<()> {
 
     let program_keypair = get_program_keypair(&client)?;
 
+    let instr = slq::CreateVault::build_instruction(
+        &program_keypair.pubkey(),
+        &config.keypair.pubkey(),
+        "vault1",
+    )?;
 
+    let mut tx = Transaction::new_with_payer(&[instr], Some(&config.keypair.pubkey()));
+    let blockhash = client.get_recent_blockhash()?.0;
+    tx.try_sign(&[&config.keypair], blockhash)?;
+    let sig = client.send_and_confirm_transaction_with_spinner(&tx)?;
 
+    info!("sig: {}", sig);
     
     Ok(())
 }

@@ -1,9 +1,9 @@
 #![allow(unused)]
 
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, bail, Context};
 use log::info;
 use structopt::StructOpt;
-use solana_sdk::signature::{read_keypair_file, Keypair};
+use solana_sdk::signature::{read_keypair_file, Keypair, Signer};
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::commitment_config::CommitmentConfig;
 
@@ -34,19 +34,46 @@ fn connect(config: &Config) -> Result<RpcClient> {
     Ok(client)
 }
 
+static DEPLOY_PATH: &str = "target/deploy";
+static PROGRAM_KEYPAIR_PATH: &str = "slq-keypair.json";
+
+pub fn get_program_keypair(client: &RpcClient) -> Result<Keypair> {
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let deploy_path = format!("{}/../../{}", manifest_dir, DEPLOY_PATH);
+    let program_keypair_path = format!("{}/{}", deploy_path, PROGRAM_KEYPAIR_PATH);
+
+    info!("loading program keypair from {}", program_keypair_path);
+
+    let program_keypair = read_keypair_file(&program_keypair_path)
+        .map_err(|e| anyhow!("{}", e))
+        .context("unable to load program keypair")?;
+
+    let program_id = program_keypair.pubkey();
+
+    info!("program id: {}", program_id);
+
+    let account = client
+        .get_account(&program_id)
+        .context("unable to get program account")?;
+
+    info!("program account: {:?}", account);
+
+    if !account.executable {
+        bail!("solana account not executable");
+    }
+
+    Ok(program_keypair)
+}
+
 fn main() -> Result<()> {
     env_logger::init();
 
     let config = load_config()?;
-
-    println!("RPC UL: {}", config.json_rpc_url);
-
     let client = connect(&config)?;
-
     let version = client.get_version()?;
 
-    println!("node version: {}", version);
-
+    let program_keypair = get_program_keypair(&client)?;
+    
     Ok(())
 }
 

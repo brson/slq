@@ -25,7 +25,6 @@ fn load_config() -> Result<Config> {
 }
 
 fn connect(config: &Config) -> Result<RpcClient> {
-
     info!("connecting to solana node at {}", config.json_rpc_url);
     let client = RpcClient::new_with_commitment(config.json_rpc_url.clone(), CommitmentConfig::confirmed());
 
@@ -78,16 +77,19 @@ fn main() -> Result<()> {
     let instr = slq::CreateVault::build_instruction(
         &program_keypair.pubkey(),
         &config.keypair.pubkey(),
-        "vault1",
+        "vault",
     )?;
 
-    let mut tx = Transaction::new_with_payer(&[instr], Some(&config.keypair.pubkey()));
     let blockhash = client.get_recent_blockhash()?.0;
-    tx.try_sign(&[&config.keypair], blockhash)?;
-    let sig = client.send_and_confirm_transaction_with_spinner(&tx)?;
+    let mut tx = Transaction::new_signed_with_payer(
+        &[instr],
+        Some(&config.keypair.pubkey()),
+        &[&config.keypair],
+        blockhash,
+    );
 
+    let sig = client.send_and_confirm_transaction_with_spinner(&tx)?;
     info!("sig: {}", sig);
     
     Ok(())
 }
-

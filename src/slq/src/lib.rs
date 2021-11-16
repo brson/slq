@@ -88,24 +88,27 @@ impl CreateVault {
         vault_name: &str,
     ) -> Result<Instruction> {
         let (vault_pubkey, vault_bump_seed) = vault_pda(program_id, payer, vault_name);
+
         let slq_instruction = SlqInstruction::CreateVault(
             CreateVault {
                 vault_name: vault_name.to_string(),
                 vault_bump_seed,
             }
         );
+        let mut slq_data: Vec<u8> = Vec::new();
+        slq_instruction.serialize(&mut slq_data).unwrap();
+
         let accounts = vec![
             AccountMeta::new(*payer, true),
             AccountMeta::new(vault_pubkey, false),
             AccountMeta::new(system_program::ID, false),
         ];
-        let data = slq_instruction.try_to_vec()
-            .map_err(|_| anyhow!("unable to serialize instruction"))?;
-        Ok(Instruction {
-            program_id: *program_id,
+
+        Ok(Instruction::new_with_bytes(
+            *program_id,
+            &slq_data,
             accounts,
-            data,
-        })
+        ))
     }
 
     fn exec<'accounts>(

@@ -96,7 +96,8 @@ impl CreateVault {
             }
         );
         let mut slq_data: Vec<u8> = Vec::new();
-        slq_instruction.serialize(&mut slq_data).unwrap();
+        slq_instruction.serialize(&mut slq_data)
+            .map_err(|_| anyhow!("unable to serialize instruction"))?;
 
         let accounts = vec![
             AccountMeta::new(*payer, true),

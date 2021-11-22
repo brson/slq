@@ -33,18 +33,19 @@ fn process_instruction(
     let instr = SlqInstruction::deserialize(&mut instruction_data)?;
     let accounts_iter = &mut accounts.iter();
 
+    let payer = next_account_info(accounts_iter)?;
+    let vault = next_account_info(accounts_iter)?;
+    let system_program = next_account_info(accounts_iter)?;
+
     match instr {
         SlqInstruction::CreateVault(instr) => {
-            let payer = next_account_info(accounts_iter)?;
-            let vault = next_account_info(accounts_iter)?;
-            let system_program = next_account_info(accounts_iter)?;
             instr.exec(program_id, payer, vault, system_program)?;
         }
         SlqInstruction::DepositToVault(instr) => {
-            let payer = next_account_info(accounts_iter)?;
-            let vault = next_account_info(accounts_iter)?;
-            let system_program = next_account_info(accounts_iter)?;
             instr.exec(program_id, payer, vault, system_program)?;
+        }
+        SlqInstruction::WithdrawFromVault(instr) => {
+            todo!()
         }
     }
 
@@ -55,6 +56,7 @@ fn process_instruction(
 pub enum SlqInstruction {
     CreateVault(CreateVault),
     DepositToVault(DepositToVault),
+    WithdrawFromVault(WithdrawFromVault),
 }
 
 
@@ -76,6 +78,13 @@ pub struct CreateVault {
 /// - 2: system_program: executable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct DepositToVault {
+    pub vault_name: String,
+    pub vault_bump_seed: u8,
+    pub amount: u64,
+}
+
+#[derive(BorshSerialize, BorshDeserialize, Debug)]
+pub struct WithdrawFromVault {
     pub vault_name: String,
     pub vault_bump_seed: u8,
     pub amount: u64,
@@ -157,14 +166,67 @@ impl CreateVault {
 }
 
 impl DepositToVault {
-    fn exec(
+    pub fn build_instruction(
+        program_id: &Pubkey,
+        payer: &Pubkey,
+        vault_name: &str,
+        amount: u64,
+    ) -> Result<Instruction> {
+        let (vault_pubkey, vault_bump_seed) = vault_pda(program_id, payer, vault_name);
+
+        let slq_instruction = SlqInstruction::DepositToVault(
+            DepositToVault {
+                vault_name: vault_name.to_string(),
+                vault_bump_seed,
+                amount,
+            }
+        );
+        let mut slq_data: Vec<u8> = Vec::new();
+        slq_instruction.serialize(&mut slq_data)
+            .map_err(|_| anyhow!("unable to serialize instruction for DepositToVault"))?;
+
+        let accounts = vec![
+            AccountMeta::new(*payer, true),
+            AccountMeta::new(vault_pubkey, false),
+            AccountMeta::new(system_program::ID, false),
+        ];
+
+        Ok(Instruction::new_with_bytes(
+            *program_id,
+            &slq_data,
+            accounts,
+        ))
+    }
+
+    fn exec<'accounts>(
         &self,
         program_id: &Pubkey,
-        payer: &AccountInfo,
-        vault: &AccountInfo,
+        payer: &AccountInfo<'accounts>,
+        vault: &AccountInfo<'accounts>,
         system_program: &AccountInfo) -> ProgramResult
     {
-        todo!()
+        invoke_signed(
+            &system_instruction::transfer(
+                payer.key,
+                vault.key,
+                self.amount,
+            ),
+            &[
+                payer.clone(),
+                vault.clone(),
+            ],
+            &[
+                &[
+                    b"vault",
+                    self.vault_name.as_ref(),
+                    payer.key.as_ref(),
+                    &[self.vault_bump_seed],
+                ],
+            ]
+
+        )?;
+        
+        Ok(())
     }
 }
 

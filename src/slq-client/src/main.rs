@@ -74,22 +74,41 @@ fn main() -> Result<()> {
 
     let program_keypair = get_program_keypair(&client)?;
 
-    let instr = slq::CreateVault::build_instruction(
-        &program_keypair.pubkey(),
-        &config.keypair.pubkey(),
-        "vault",
-    )?;
+    let opt = Opt::from_args();
+    match opt.cmd {
+        Command::CreateVault => {
+            let instr = slq::CreateVault::build_instruction(
+                &program_keypair.pubkey(),
+                &config.keypair.pubkey(),
+                "vault",
+            )?;
 
-    let blockhash = client.get_recent_blockhash()?.0;
-    let mut tx = Transaction::new_signed_with_payer(
-        &[instr],
-        Some(&config.keypair.pubkey()),
-        &[&config.keypair],
-        blockhash,
-    );
+            let blockhash = client.get_recent_blockhash()?.0;
+            let mut tx = Transaction::new_signed_with_payer(
+                &[instr],
+                Some(&config.keypair.pubkey()),
+                &[&config.keypair],
+                blockhash,
+            );
 
-    let sig = client.send_and_confirm_transaction_with_spinner(&tx)?;
-    info!("sig: {}", sig);
-    
+            let sig = client.send_and_confirm_transaction_with_spinner(&tx)?;
+            info!("sig: {}", sig);
+        }
+        Command::DepositToVault => {
+            todo!()
+        }
+    }
     Ok(())
+}
+
+#[derive(StructOpt)]
+struct Opt {
+    #[structopt(subcommand)]
+    cmd: Command,
+}
+
+#[derive(StructOpt)]
+enum Command {    
+    CreateVault,
+    DepositToVault,
 }

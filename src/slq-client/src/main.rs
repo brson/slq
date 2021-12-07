@@ -79,28 +79,24 @@ fn main() -> Result<()> {
     let vault_name = "vault".to_string();
 
     let opt = Opt::from_args();
-    
+
     let instr = match opt.cmd {
-        Command::CreateVault => {
-            slq::CreateVault::build_instruction(
-                &program_keypair.pubkey(),
-                &config.keypair.pubkey(),
-                &vault_name,
-            )?
-        }
-        Command::DepositToVault { amount } => {
-            slq::DepositToVault::build_instruction(
-                &program_keypair.pubkey(),
-                &config.keypair.pubkey(),
-                &vault_name,
-                amount,
-            )?
-        }
+        Command::CreateVault => slq::CreateVault::build_instruction(
+            &program_keypair.pubkey(),
+            &config.keypair.pubkey(),
+            &vault_name,
+        )?,
+        Command::DepositToVault { amount } => slq::DepositToVault::build_instruction(
+            &program_keypair.pubkey(),
+            &config.keypair.pubkey(),
+            &vault_name,
+            amount,
+        )?,
         Command::WithdrawFromVault => {
             todo!()
         }
     };
- 
+
     let blockhash = client.get_recent_blockhash()?.0;
     let tx = Transaction::new_signed_with_payer(
         &[instr],
@@ -111,7 +107,7 @@ fn main() -> Result<()> {
 
     let sig = client.send_and_confirm_transaction_with_spinner(&tx)?;
     info!("sig: {}", sig);
-    
+
     Ok(())
 }
 

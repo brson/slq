@@ -76,51 +76,42 @@ fn main() -> Result<()> {
     let version = client.get_version()?;
 
     let program_keypair = get_program_keypair(&client)?;
-    let vault_name = "vault100".to_string();
+    let vault_name = "vault".to_string();
 
     let opt = Opt::from_args();
-    match opt.cmd {
+    
+    let instr = match opt.cmd {
         Command::CreateVault => {
-            let instr = slq::CreateVault::build_instruction(
+            slq::CreateVault::build_instruction(
                 &program_keypair.pubkey(),
                 &config.keypair.pubkey(),
                 &vault_name,
-            )?;
-
-            let blockhash = client.get_recent_blockhash()?.0;
-            let tx = Transaction::new_signed_with_payer(
-                &[instr],
-                Some(&config.keypair.pubkey()),
-                &[&config.keypair],
-                blockhash,
-            );
-
-            let sig = client.send_and_confirm_transaction_with_spinner(&tx)?;
-            info!("sig: {}", sig);
+            )?
         }
         Command::DepositToVault { amount } => {
-            let instr = slq::DepositToVault::build_instruction(
+            slq::DepositToVault::build_instruction(
                 &program_keypair.pubkey(),
                 &config.keypair.pubkey(),
                 &vault_name,
                 amount,
-            )?;
-
-            let blockhash = client.get_recent_blockhash()?.0;
-            let tx = Transaction::new_signed_with_payer(
-                &[instr],
-                Some(&config.keypair.pubkey()),
-                &[&config.keypair],
-                blockhash,
-            );
-
-            let sig = client.send_and_confirm_transaction_with_spinner(&tx)?;
-            info!("sig: {}", sig);
+            )?
         }
         Command::WithdrawFromVault => {
             todo!()
         }
-    }
+    };
+ 
+    let blockhash = client.get_recent_blockhash()?.0;
+    let tx = Transaction::new_signed_with_payer(
+        &[instr],
+        Some(&config.keypair.pubkey()),
+        &[&config.keypair],
+        blockhash,
+    );
+
+    let sig = client.send_and_confirm_transaction_with_spinner(&tx)?;
+    info!("sig: {}", sig);
+    
     Ok(())
 }
 

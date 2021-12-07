@@ -35,14 +35,14 @@ fn process_instruction(
 
     let payer = next_account_info(accounts_iter)?;
     let vault = next_account_info(accounts_iter)?;
-    let system_program = next_account_info(accounts_iter)?;
+//    let system_program = next_account_info(accounts_iter)?;
 
     match instr {
         SlqInstruction::CreateVault(instr) => {
-            instr.exec(program_id, payer, vault, system_program)?;
+            instr.exec(program_id, payer, vault)?;
         }
         SlqInstruction::DepositToVault(instr) => {
-            instr.exec(program_id, payer, vault, system_program)?;
+            instr.exec(program_id, payer, vault)?;
         }
         SlqInstruction::WithdrawFromVault(instr) => {
             todo!()
@@ -125,13 +125,11 @@ impl CreateVault {
         &self,
         program_id: &Pubkey,
         payer: &AccountInfo<'accounts>,
-        vault: &AccountInfo<'accounts>,
-        system_program: &AccountInfo) -> ProgramResult
+        vault: &AccountInfo<'accounts>) -> ProgramResult
     {
         assert!(payer.is_signer);
         assert!(payer.is_writable);
         // todo vault asserts
-        assert!(system_program.executable);
 
         let (vault_, vault_bump_seed_) = vault_pda(program_id, payer.key, &self.vault_name);
         assert_eq!(vault.key, &vault_);
@@ -202,8 +200,7 @@ impl DepositToVault {
         &self,
         program_id: &Pubkey,
         payer: &AccountInfo<'accounts>,
-        vault: &AccountInfo<'accounts>,
-        system_program: &AccountInfo) -> ProgramResult
+        vault: &AccountInfo<'accounts>) -> ProgramResult
     {
         invoke_signed(
             &system_instruction::transfer(

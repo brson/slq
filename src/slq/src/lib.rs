@@ -111,7 +111,7 @@ impl CreateVault {
         let accounts = vec![
             AccountMeta::new(*payer, true),
             AccountMeta::new(vault_pubkey, false),
-            AccountMeta::new(system_program::ID, false),
+            AccountMeta::new_readonly(system_program::ID, false),
         ];
 
         Ok(Instruction::new_with_bytes(
@@ -186,7 +186,7 @@ impl DepositToVault {
         let accounts = vec![
             AccountMeta::new(*payer, true),
             AccountMeta::new(vault_pubkey, false),
-            AccountMeta::new(system_program::ID, false),
+            AccountMeta::new_readonly(system_program::ID, false),
         ];
 
         Ok(Instruction::new_with_bytes(

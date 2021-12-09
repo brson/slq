@@ -112,9 +112,9 @@ impl CreateVault {
                 vault_bump_seed,
             }
         );
-        let mut slq_data: Vec<u8> = Vec::new();
-        slq_instruction.serialize(&mut slq_data)
-            .map_err(|_| anyhow!("unable to serialize instruction"))?;
+//        let mut slq_data: Vec<u8> = Vec::new();
+//        slq_instruction.serialize(&mut slq_data)
+//            .map_err(|_| anyhow!("unable to serialize instruction"))?;
 
         let accounts = vec![
             AccountMeta::new(*payer, true),
@@ -122,9 +122,9 @@ impl CreateVault {
             AccountMeta::new_readonly(system_program::ID, false),
         ];
 
-        Ok(Instruction::new_with_bytes(
+        Ok(Instruction::new_with_borsh(
             *program_id,
-            &slq_data,
+            &slq_instruction,
             accounts,
         ))
     }
@@ -187,9 +187,6 @@ impl DepositToVault {
                 amount,
             }
         );
-        let mut slq_data: Vec<u8> = Vec::new();
-        slq_instruction.serialize(&mut slq_data)
-            .map_err(|_| anyhow!("unable to serialize instruction for DepositToVault"))?;
 
         let accounts = vec![
             AccountMeta::new(*payer, true),
@@ -197,9 +194,9 @@ impl DepositToVault {
             AccountMeta::new_readonly(system_program::ID, false),
         ];
 
-        Ok(Instruction::new_with_bytes(
+        Ok(Instruction::new_with_borsh(
             *program_id,
-            &slq_data,
+            &slq_instruction,
             accounts,
         ))
     }

@@ -98,7 +98,9 @@ fn main() -> Result<()> {
             &vault_name,
             amount,
         )?,
-        _ => { unreachable!() }
+        _ => {
+            unreachable!()
+        }
     };
 
     let blockhash = client.get_recent_blockhash()?.0;

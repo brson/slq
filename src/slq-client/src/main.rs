@@ -92,9 +92,13 @@ fn main() -> Result<()> {
             &vault_name,
             amount,
         )?,
-        Command::WithdrawFromVault => {
-            todo!()
-        }
+        Command::WithdrawFromVault { amount } => slq::WithdrawFromVault::build_instruction(
+            &program_keypair.pubkey(),
+            &config.keypair.pubkey(),
+            &vault_name,
+            amount,
+        )?,
+        _ => { unreachable!() }
     };
 
     let blockhash = client.get_recent_blockhash()?.0;
@@ -121,5 +125,5 @@ struct Opt {
 enum Command {
     CreateVault,
     DepositToVault { amount: u64 },
-    WithdrawFromVault,
+    WithdrawFromVault { amount: u64 }, // todo: withdraw all command
 }

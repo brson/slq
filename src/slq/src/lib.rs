@@ -35,8 +35,11 @@ fn process_instruction(
 
     let payer = next_account_info(accounts_iter)?;
     let vault = next_account_info(accounts_iter)?;
-//    let system_program = next_account_info(accounts_iter)?;
+    // let system_program = next_account_info(accounts_iter)?;
 
+    // todo
+    // if the system_program == Systemprogram::ID
+    
     match instr {
         SlqInstruction::CreateVault(instr) => {
             instr.exec(program_id, payer, vault)?;
@@ -45,7 +48,7 @@ fn process_instruction(
             instr.exec(program_id, payer, vault)?;
         }
         SlqInstruction::WithdrawFromVault(instr) => {
-            todo!()
+            instr.exec(program_id, payer, vault)?;
         }
     }
 
@@ -83,6 +86,11 @@ pub struct DepositToVault {
     pub amount: u64,
 }
 
+/// # Accounts
+///
+/// - 0: payer: signer, writable
+/// - 1: vault: pda, writable, owner=program
+/// - 2: system_program: executable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct WithdrawFromVault {
     pub vault_name: String,
@@ -206,6 +214,70 @@ impl DepositToVault {
             &system_instruction::transfer(
                 payer.key,
                 vault.key,
+                self.amount,
+            ),
+            &[
+                payer.clone(),
+                vault.clone(),
+            ],
+            &[
+                &[
+                    b"vault",
+                    self.vault_name.as_ref(),
+                    payer.key.as_ref(),
+                    &[self.vault_bump_seed],
+                ],
+            ]
+
+        )?;
+        
+        Ok(())
+    }
+}
+
+impl WithdrawFromVault {
+    pub fn build_instruction(
+        program_id: &Pubkey,
+        payer: &Pubkey,
+        vault_name: &str,
+        amount: u64,
+    ) -> Result<Instruction> {
+        let (vault_pubkey, vault_bump_seed) = vault_pda(program_id, payer, vault_name);
+
+        let slq_instruction = SlqInstruction::WithdrawFromVault(
+            WithdrawFromVault {
+                vault_name: vault_name.to_string(),
+                vault_bump_seed,
+                amount,
+            }
+        );
+
+        let accounts = vec![
+            AccountMeta::new(*payer, true),
+            AccountMeta::new(vault_pubkey, false),
+            AccountMeta::new_readonly(system_program::ID, false),
+        ];
+
+        Ok(Instruction::new_with_borsh(
+            *program_id,
+            &slq_instruction,
+            accounts,
+        ))
+    }
+
+    fn exec<'accounts>(
+        &self,
+        program_id: &Pubkey,
+        payer: &AccountInfo<'accounts>,
+        vault: &AccountInfo<'accounts>,
+    ) -> ProgramResult {
+        // todo:
+        // - if pda_vault has enough balance
+        // - if the caller is the one who created the vault
+        invoke_signed(
+            &system_instruction::transfer(
+                vault.key,
+                payer.key,
                 self.amount,
             ),
             &[

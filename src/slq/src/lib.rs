@@ -16,6 +16,7 @@ use solana_program::instruction::{AccountMeta, Instruction};
 use std::convert::{TryFrom, TryInto};
 
 pub mod admin;
+pub mod state;
 
 #[cfg(not(feature = "no-entrypoint"))]
 mod entrypoint {

@@ -123,7 +123,7 @@ fn do_admin_command(cmd: AdminCommand) -> Result<()> {
 
     match cmd {
         AdminCommand::Init(InitAdminCommand {
-            instance, approval_threshold, admin_accounts
+            instance_name, approval_threshold, admin_accounts
         }) => {
         }
         _ => todo!()
@@ -156,26 +156,26 @@ enum AdminCommand {
 
 #[derive(StructOpt, Debug)]
 struct InitAdminCommand {
-    instance: String,
+    instance_name: String,
     approval_threshold: u8,
     admin_accounts: Vec<String>,
 }
 
 #[derive(StructOpt, Debug)]
 struct ChangeApprovalThresholdAdminCommand {
-    instance: String,
+    instance_name: String,
     approval_threshold: u8,
 }
 
 #[derive(StructOpt, Debug)]
 struct AddAdminAccountAdminCommand {
-    instance: String,
+    instance_name: String,
     account: String,
 }
 
 #[derive(StructOpt, Debug)]
 struct RemoveAdminAccountAdminCommand {
-    instance: String,
+    instance_name: String,
     account: String,
 }
 

@@ -303,7 +303,7 @@ impl WithdrawFromVault {
     }
 }
 
-pub fn vault_pda(program_id: &Pubkey, payer: &Pubkey, name: &str) -> (Pubkey, u8) {
+fn vault_pda(program_id: &Pubkey, payer: &Pubkey, name: &str) -> (Pubkey, u8) {
     let vault_seeds = &[b"vault", name.as_bytes(), payer.as_ref()];
     let (vault, vault_bump_seed) = Pubkey::find_program_address(vault_seeds, program_id);
 

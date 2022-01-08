@@ -37,13 +37,14 @@ pub enum SlqAdminInstruction {
 
 /// # Accounts
 ///
-/// - 0: instance: pda, writable, owner=program, uninitialized
+/// - 0: instance_pda: pda, writable, owner=program, uninitialized
+/// - 1: system_Program: executable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct Init {
     pub instance_name: String,
     pub approval_threshold: u8,
     pub admin_accounts: Vec<Pubkey>,
-    pub instance_account_bump_seed: u8,
+    pub instance_pda_bump_seed: u8,
 }
 
 impl Init {
@@ -53,13 +54,13 @@ impl Init {
         approval_threshold: u8,
         admin_accounts: Vec<Pubkey>
     ) -> Result<Instruction> {
-        let (instance_account, instance_account_bump_seed) = instance_pda(program_id, &instance_name);
+        let (instance_pda, instance_pda_bump_seed) = instance_pda(program_id, &instance_name);
 
         let instr = Init {
             instance_name,
             approval_threshold,
             admin_accounts,
-            instance_account_bump_seed,
+            instance_pda_bump_seed,
         };
 
         instr.validate()?;
@@ -68,7 +69,16 @@ impl Init {
             SlqAdminInstruction::Init(instr)
         );
 
-        todo!()
+        let accounts = vec![
+            AccountMeta::new(instance_pda, false),
+            AccountMeta::new_readonly(system_program::ID, false),
+        ];
+
+        Ok(Instruction::new_with_borsh(
+            *program_id,
+            &instr,
+            accounts,
+        ))
     }
 
     fn validate(&self) -> Result<()> {

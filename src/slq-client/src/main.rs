@@ -81,6 +81,10 @@ fn main() -> Result<()> {
     let opt = Opt::from_args();
 
     let instr = match opt.cmd {
+        Command::Admin(cmd) => {
+            do_admin_command(cmd)?;
+            return Ok(());
+        }
         Command::CreateVault => slq::CreateVault::build_instruction(
             &program_keypair.pubkey(),
             &config.keypair.pubkey(),
@@ -98,9 +102,6 @@ fn main() -> Result<()> {
             &vault_name,
             amount,
         )?,
-        _ => {
-            unreachable!()
-        }
     };
 
     let blockhash = client.get_recent_blockhash()?.0;
@@ -117,15 +118,64 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-#[derive(StructOpt)]
+fn do_admin_command(cmd: AdminCommand) -> Result<()> {
+    use slq::admin;
+
+    match cmd {
+        AdminCommand::Init(InitAdminCommand {
+            instance, approval_threshold, admin_accounts
+        }) => {
+        }
+        _ => todo!()
+    }
+
+    Ok(())
+}
+
+#[derive(StructOpt, Debug)]
 struct Opt {
     #[structopt(subcommand)]
     cmd: Command,
 }
 
-#[derive(StructOpt)]
+#[derive(StructOpt, Debug)]
 enum Command {
+    Admin(AdminCommand),
     CreateVault,
     DepositToVault { amount: u64 },
     WithdrawFromVault { amount: u64 }, // todo: withdraw all command
 }
+
+#[derive(StructOpt, Debug)]
+enum AdminCommand {
+    Init(InitAdminCommand),
+    ChangeApprovalThreshold(ChangeApprovalThresholdAdminCommand),
+    AddAdminAccount(AddAdminAccountAdminCommand),
+    RemoveAdminAccount(RemoveAdminAccountAdminCommand),
+}
+
+#[derive(StructOpt, Debug)]
+struct InitAdminCommand {
+    instance: String,
+    approval_threshold: u8,
+    admin_accounts: Vec<String>,
+}
+
+#[derive(StructOpt, Debug)]
+struct ChangeApprovalThresholdAdminCommand {
+    instance: String,
+    approval_threshold: u8,
+}
+
+#[derive(StructOpt, Debug)]
+struct AddAdminAccountAdminCommand {
+    instance: String,
+    account: String,
+}
+
+#[derive(StructOpt, Debug)]
+struct RemoveAdminAccountAdminCommand {
+    instance: String,
+    account: String,
+}
+

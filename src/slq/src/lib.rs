@@ -15,6 +15,8 @@ use solana_program::{
 use solana_program::instruction::{AccountMeta, Instruction};
 use std::convert::{TryFrom, TryInto};
 
+pub mod admin;
+
 #[cfg(not(feature = "no-entrypoint"))]
 mod entrypoint {
     use solana_program::entrypoint;
@@ -41,6 +43,9 @@ fn process_instruction(
     // if the system_program == Systemprogram::ID
     
     match instr {
+        SlqInstruction::Admin(instr) => {
+            admin::exec(program_id, accounts, instr)?;
+        }
         SlqInstruction::CreateVault(instr) => {
             instr.exec(program_id, payer, vault)?;
         }
@@ -57,6 +62,7 @@ fn process_instruction(
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub enum SlqInstruction {
+    Admin(admin::SlqAdminInstruction),
     CreateVault(CreateVault),
     DepositToVault(DepositToVault),
     WithdrawFromVault(WithdrawFromVault),

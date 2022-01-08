@@ -25,7 +25,7 @@ pub fn exec(
 ) -> ProgramResult {
     match instr {
         SlqAdminInstruction::Init(instr) => {
-            todo!()
+            instr.exec(program_id, accounts)
         }
     }
 }
@@ -37,8 +37,8 @@ pub enum SlqAdminInstruction {
 
 /// # Accounts
 ///
-/// - 0: instance_pda: pda, writable, owner=program, uninitialized
-/// - 1: system_Program: executable
+/// - 0: instance_pda: pda, writable, owner=system_program, uninitialized
+/// - 1: system_program: executable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct Init {
     pub instance_name: String,
@@ -54,7 +54,7 @@ impl Init {
         approval_threshold: u8,
         admin_accounts: Vec<Pubkey>
     ) -> Result<Instruction> {
-        let (instance_pda, instance_pda_bump_seed) = instance_pda(program_id, &instance_name);
+        let (instance_pda, instance_pda_bump_seed) = make_instance_pda(program_id, &instance_name);
 
         let instr = Init {
             instance_name,
@@ -109,16 +109,49 @@ impl Init {
         Ok(())
     }
 
-    fn exec(&self, program_id: &Pubkey) -> ProgramResult {
+    fn exec(
+        &self,
+        program_id: &Pubkey,
+        accounts: &[AccountInfo],
+    ) -> ProgramResult {
+        let accounts_iter = &mut accounts.iter();
+
+        let instance_pda = next_account_info(accounts_iter)?;
+        let system_program = next_account_info(accounts_iter)?;
+
+        assert!(instance_pda.is_writable);
+        assert_eq!(instance_pda.owner, system_program.key);
+        assert_eq!(system_program.key, &system_program::ID);
+        assert!(system_program.executable);
+
+        verify_pda(
+            program_id,
+            &self.instance_name,
+            instance_pda.key,
+            self.instance_pda_bump_seed,
+            make_instance_pda
+        );
+
         todo!()
     }
 }
 
-fn instance_pda(
+fn make_instance_pda(
     program_id: &Pubkey,
     instance_name: &str,
 ) -> (Pubkey, u8) {
     let seeds = &[b"instance", instance_name.as_bytes()];
     Pubkey::find_program_address(seeds, program_id)
 }
-                
+
+fn verify_pda(
+    program_id: &Pubkey,
+    seed: &str,
+    pda: &Pubkey,
+    pda_bump_seed: u8,
+    make_pda_fn: impl Fn(&Pubkey, &str) -> (Pubkey, u8)
+) {
+    let (expected_pda, expected_pda_bump_seed) = make_pda_fn(program_id, seed);
+    assert_eq!(pda, &expected_pda);
+    assert_eq!(pda_bump_seed, expected_pda_bump_seed);
+}

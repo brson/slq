@@ -1,18 +1,17 @@
 #![allow(unused)]
 
-use anyhow::{Result, anyhow};
-use borsh::{BorshSerialize, BorshDeserialize};
+use anyhow::{anyhow, Result};
+use borsh::{BorshDeserialize, BorshSerialize};
+use solana_program::instruction::{AccountMeta, Instruction};
 use solana_program::{
-    account_info::{AccountInfo, next_account_info, next_account_infos},
+    account_info::{next_account_info, next_account_infos, AccountInfo},
     entrypoint::ProgramResult,
+    msg,
+    program::invoke_signed,
     program_error::ProgramError,
     pubkey::Pubkey,
-    system_program,
-    system_instruction,
-    program::invoke_signed,
-    msg,
+    system_instruction, system_program,
 };
-use solana_program::instruction::{AccountMeta, Instruction};
 use std::convert::{TryFrom, TryInto};
 
 pub mod admin;
@@ -20,8 +19,8 @@ pub mod state;
 
 #[cfg(not(feature = "no-entrypoint"))]
 mod entrypoint {
-    use solana_program::entrypoint;
     use super::process_instruction;
+    use solana_program::entrypoint;
     entrypoint!(process_instruction);
 }
 
@@ -42,7 +41,7 @@ fn process_instruction(
 
     // todo
     // if the system_program == Systemprogram::ID
-    
+
     match instr {
         SlqInstruction::Admin(instr) => {
             admin::exec(program_id, accounts, instr)?;
@@ -68,7 +67,6 @@ pub enum SlqInstruction {
     DepositToVault(DepositToVault),
     WithdrawFromVault(WithdrawFromVault),
 }
-
 
 /// # Accounts
 ///
@@ -113,15 +111,13 @@ impl CreateVault {
     ) -> Result<Instruction> {
         let (vault_pubkey, vault_bump_seed) = vault_pda(program_id, payer, vault_name);
 
-        let slq_instruction = SlqInstruction::CreateVault(
-            CreateVault {
-                vault_name: vault_name.to_string(),
-                vault_bump_seed,
-            }
-        );
-//        let mut slq_data: Vec<u8> = Vec::new();
-//        slq_instruction.serialize(&mut slq_data)
-//            .map_err(|_| anyhow!("unable to serialize instruction"))?;
+        let slq_instruction = SlqInstruction::CreateVault(CreateVault {
+            vault_name: vault_name.to_string(),
+            vault_bump_seed,
+        });
+        //        let mut slq_data: Vec<u8> = Vec::new();
+        //        slq_instruction.serialize(&mut slq_data)
+        //            .map_err(|_| anyhow!("unable to serialize instruction"))?;
 
         let accounts = vec![
             AccountMeta::new(*payer, true),
@@ -140,8 +136,8 @@ impl CreateVault {
         &self,
         program_id: &Pubkey,
         payer: &AccountInfo<'accounts>,
-        vault: &AccountInfo<'accounts>) -> ProgramResult
-    {
+        vault: &AccountInfo<'accounts>,
+    ) -> ProgramResult {
         assert!(payer.is_signer);
         assert!(payer.is_writable);
         // todo vault asserts
@@ -153,25 +149,14 @@ impl CreateVault {
         let lamports = 1000; // todo
 
         invoke_signed(
-            &system_instruction::create_account(
-                payer.key,
-                vault.key,
-                lamports,
-                0,
-                program_id,
-            ),
-            &[
-                payer.clone(),
-                vault.clone(),
-            ],
-            &[
-                &[
-                    b"vault",
-                    self.vault_name.as_ref(),
-                    payer.key.as_ref(),
-                    &[self.vault_bump_seed],
-                ],
-            ]
+            &system_instruction::create_account(payer.key, vault.key, lamports, 0, program_id),
+            &[payer.clone(), vault.clone()],
+            &[&[
+                b"vault",
+                self.vault_name.as_ref(),
+                payer.key.as_ref(),
+                &[self.vault_bump_seed],
+            ]],
         )?;
 
         Ok(())
@@ -187,13 +172,11 @@ impl DepositToVault {
     ) -> Result<Instruction> {
         let (vault_pubkey, vault_bump_seed) = vault_pda(program_id, payer, vault_name);
 
-        let slq_instruction = SlqInstruction::DepositToVault(
-            DepositToVault {
-                vault_name: vault_name.to_string(),
-                vault_bump_seed,
-                amount,
-            }
-        );
+        let slq_instruction = SlqInstruction::DepositToVault(DepositToVault {
+            vault_name: vault_name.to_string(),
+            vault_bump_seed,
+            amount,
+        });
 
         let accounts = vec![
             AccountMeta::new(*payer, true),
@@ -212,29 +195,19 @@ impl DepositToVault {
         &self,
         program_id: &Pubkey,
         payer: &AccountInfo<'accounts>,
-        vault: &AccountInfo<'accounts>) -> ProgramResult
-    {
+        vault: &AccountInfo<'accounts>,
+    ) -> ProgramResult {
         invoke_signed(
-            &system_instruction::transfer(
-                payer.key,
-                vault.key,
-                self.amount,
-            ),
-            &[
-                payer.clone(),
-                vault.clone(),
-            ],
-            &[
-                &[
-                    b"vault",
-                    self.vault_name.as_ref(),
-                    payer.key.as_ref(),
-                    &[self.vault_bump_seed],
-                ],
-            ]
-
+            &system_instruction::transfer(payer.key, vault.key, self.amount),
+            &[payer.clone(), vault.clone()],
+            &[&[
+                b"vault",
+                self.vault_name.as_ref(),
+                payer.key.as_ref(),
+                &[self.vault_bump_seed],
+            ]],
         )?;
-        
+
         Ok(())
     }
 }
@@ -248,13 +221,11 @@ impl WithdrawFromVault {
     ) -> Result<Instruction> {
         let (vault_pubkey, vault_bump_seed) = vault_pda(program_id, payer, vault_name);
 
-        let slq_instruction = SlqInstruction::WithdrawFromVault(
-            WithdrawFromVault {
-                vault_name: vault_name.to_string(),
-                vault_bump_seed,
-                amount,
-            }
-        );
+        let slq_instruction = SlqInstruction::WithdrawFromVault(WithdrawFromVault {
+            vault_name: vault_name.to_string(),
+            vault_bump_seed,
+            amount,
+        });
 
         let accounts = vec![
             AccountMeta::new(*payer, true),
@@ -279,26 +250,16 @@ impl WithdrawFromVault {
         // - if pda_vault has enough balance
         // - if the caller is the one who created the vault
         invoke_signed(
-            &system_instruction::transfer(
-                vault.key,
-                payer.key,
-                self.amount,
-            ),
-            &[
-                payer.clone(),
-                vault.clone(),
-            ],
-            &[
-                &[
-                    b"vault",
-                    self.vault_name.as_ref(),
-                    payer.key.as_ref(),
-                    &[self.vault_bump_seed],
-                ],
-            ]
-
+            &system_instruction::transfer(vault.key, payer.key, self.amount),
+            &[payer.clone(), vault.clone()],
+            &[&[
+                b"vault",
+                self.vault_name.as_ref(),
+                payer.key.as_ref(),
+                &[self.vault_bump_seed],
+            ]],
         )?;
-        
+
         Ok(())
     }
 }

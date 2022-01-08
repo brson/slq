@@ -123,10 +123,11 @@ fn do_admin_command(cmd: AdminCommand) -> Result<()> {
 
     match cmd {
         AdminCommand::Init(InitAdminCommand {
-            instance_name, approval_threshold, admin_accounts
-        }) => {
-        }
-        _ => todo!()
+            instance_name,
+            approval_threshold,
+            admin_accounts,
+        }) => {}
+        _ => todo!(),
     }
 
     Ok(())
@@ -178,4 +179,3 @@ struct RemoveAdminAccountAdminCommand {
     instance_name: String,
     account: String,
 }
-

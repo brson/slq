@@ -1,22 +1,21 @@
 #![allow(unused)]
 
-use anyhow::{Result, anyhow, bail};
-use borsh::{BorshSerialize, BorshDeserialize};
+use anyhow::{anyhow, bail, Result};
+use borsh::{BorshDeserialize, BorshSerialize};
+use solana_program::instruction::{AccountMeta, Instruction};
 use solana_program::{
-    account_info::{AccountInfo, next_account_info, next_account_infos},
+    account_info::{next_account_info, next_account_infos, AccountInfo},
     entrypoint::ProgramResult,
+    msg,
+    program::invoke_signed,
     program_error::ProgramError,
     pubkey::Pubkey,
-    system_program,
-    system_instruction,
-    program::invoke_signed,
-    msg,
+    system_instruction, system_program,
 };
-use solana_program::instruction::{AccountMeta, Instruction};
 use std::convert::{TryFrom, TryInto};
 
-use crate::SlqInstruction;
 use crate::state::MAX_ADMIN_ACCOUNTS;
+use crate::SlqInstruction;
 
 pub fn exec(
     program_id: &Pubkey,
@@ -24,9 +23,7 @@ pub fn exec(
     instr: SlqAdminInstruction,
 ) -> ProgramResult {
     match instr {
-        SlqAdminInstruction::Init(instr) => {
-            instr.exec(program_id, accounts)
-        }
+        SlqAdminInstruction::Init(instr) => instr.exec(program_id, accounts),
     }
 }
 
@@ -52,7 +49,7 @@ impl Init {
         program_id: &Pubkey,
         instance_name: String,
         approval_threshold: u8,
-        admin_accounts: Vec<Pubkey>
+        admin_accounts: Vec<Pubkey>,
     ) -> Result<Instruction> {
         let (instance_pda, instance_pda_bump_seed) = make_instance_pda(program_id, &instance_name);
 
@@ -65,20 +62,14 @@ impl Init {
 
         instr.validate()?;
 
-        let instr = SlqInstruction::Admin(
-            SlqAdminInstruction::Init(instr)
-        );
+        let instr = SlqInstruction::Admin(SlqAdminInstruction::Init(instr));
 
         let accounts = vec![
             AccountMeta::new(instance_pda, false),
             AccountMeta::new_readonly(system_program::ID, false),
         ];
 
-        Ok(Instruction::new_with_borsh(
-            *program_id,
-            &instr,
-            accounts,
-        ))
+        Ok(Instruction::new_with_borsh(*program_id, &instr, accounts))
     }
 
     fn validate(&self) -> Result<()> {
@@ -91,7 +82,10 @@ impl Init {
         }
 
         if self.admin_accounts.len() > MAX_ADMIN_ACCOUNTS {
-            bail!("number of admin accounts must be not be greater than {}", MAX_ADMIN_ACCOUNTS);
+            bail!(
+                "number of admin accounts must be not be greater than {}",
+                MAX_ADMIN_ACCOUNTS
+            );
         }
 
         if usize::from(self.approval_threshold) > self.admin_accounts.len() {
@@ -109,11 +103,7 @@ impl Init {
         Ok(())
     }
 
-    fn exec(
-        &self,
-        program_id: &Pubkey,
-        accounts: &[AccountInfo],
-    ) -> ProgramResult {
+    fn exec(&self, program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
         let accounts_iter = &mut accounts.iter();
 
         let instance_pda = next_account_info(accounts_iter)?;
@@ -129,17 +119,14 @@ impl Init {
             &self.instance_name,
             instance_pda.key,
             self.instance_pda_bump_seed,
-            make_instance_pda
+            make_instance_pda,
         );
 
         todo!()
     }
 }
 
-fn make_instance_pda(
-    program_id: &Pubkey,
-    instance_name: &str,
-) -> (Pubkey, u8) {
+fn make_instance_pda(program_id: &Pubkey, instance_name: &str) -> (Pubkey, u8) {
     let seeds = &[b"instance", instance_name.as_bytes()];
     Pubkey::find_program_address(seeds, program_id)
 }
@@ -149,7 +136,7 @@ fn verify_pda(
     seed: &str,
     pda: &Pubkey,
     pda_bump_seed: u8,
-    make_pda_fn: impl Fn(&Pubkey, &str) -> (Pubkey, u8)
+    make_pda_fn: impl Fn(&Pubkey, &str) -> (Pubkey, u8),
 ) {
     let (expected_pda, expected_pda_bump_seed) = make_pda_fn(program_id, seed);
     assert_eq!(pda, &expected_pda);

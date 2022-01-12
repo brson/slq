@@ -80,6 +80,54 @@ impl Init {
         Ok(Instruction::new_with_borsh(*program_id, &instr, accounts))
     }
 
+    fn exec(&self, program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+        // todo storage calculation & lamports verify
+        
+        let accounts_iter = &mut accounts.iter();
+
+        let rent_payer = next_account_info(accounts_iter)?;
+        let instance_pda = next_account_info(accounts_iter)?;
+        let system_program = next_account_info(accounts_iter)?;
+        
+        assert!(instance_pda.is_writable);
+        assert_eq!(instance_pda.owner, system_program.key);
+        assert_eq!(system_program.key, &system_program::ID);
+        assert!(system_program.executable);
+
+        if instance_pda.owner != system_program.key {
+            msg!("Instance_pda does not have the correct program id");
+            return Err(ProgramError::IncorrectProgramId);
+        }
+
+        verify_pda(
+            program_id,
+            &self.instance_name,
+            instance_pda.key,
+            self.instance_pda_bump_seed,
+            make_instance_pda,
+        );
+        
+        invoke_signed(
+            &system_instruction::create_account(
+                rent_payer.key,
+                instance_pda.key,
+                self.lamports,
+                self.storage,
+                program_id,
+            ),
+            &[rent_payer.clone(), instance_pda.clone()],
+            &[&[
+                b"instance",
+                self.instance_name.as_ref(),
+                &[self.instance_pda_bump_seed],
+            ]],
+        )?;
+
+        msg!("init instance_pda's data");
+
+        Ok(self.serialize(&mut &mut instance_pda.data.borrow_mut()[..])?)
+    }
+
     fn validate(&self) -> Result<()> {
         if self.approval_threshold == 0 {
             bail!("approval threshold must be greater than 0");
@@ -108,50 +156,6 @@ impl Init {
             bail!("must not have duplicate admin accounts");
         }
 
-        Ok(())
-    }
-
-    fn exec(&self, program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
-        // todo storage calculation & lamports verify
-        
-        let accounts_iter = &mut accounts.iter();
-
-        let rent_payer = next_account_info(accounts_iter)?;
-        let instance_pda = next_account_info(accounts_iter)?;
-        let system_program = next_account_info(accounts_iter)?;
-
-        assert!(instance_pda.is_writable);
-        assert_eq!(instance_pda.owner, system_program.key);
-        assert_eq!(system_program.key, &system_program::ID);
-        assert!(system_program.executable);
-
-        verify_pda(
-            program_id,
-            &self.instance_name,
-            instance_pda.key,
-            self.instance_pda_bump_seed,
-            make_instance_pda,
-        );
-        
-        invoke_signed(
-            &system_instruction::create_account(
-                rent_payer.key,
-                instance_pda.key,
-                self.lamports,
-                self.storage,
-                program_id,
-            ),
-            &[rent_payer.clone(), instance_pda.clone()],
-            &[&[
-                b"instance",
-                self.instance_name.as_ref(),
-                &[self.instance_pda_bump_seed],
-            ]],
-        )?;
-
-        // create instance data
-        // and save it 
-        
         Ok(())
     }
 }

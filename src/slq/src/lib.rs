@@ -71,7 +71,7 @@ pub enum SlqInstruction {
 /// # Accounts
 ///
 /// - 0: payer: signer, writable
-/// - 1: vault: pda, writable, owner=program?
+/// - 1: vault: pda, writable, owner=program_id
 /// - 2: system_program: executable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct CreateVault {
@@ -82,7 +82,7 @@ pub struct CreateVault {
 /// # Accounts
 ///
 /// - 0: payer: signer, writable
-/// - 1: vault: pda, writable, owner=program
+/// - 1: vault: pda, writable, owner=program_id
 /// - 2: system_program: executable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct DepositToVault {

@@ -82,13 +82,13 @@ impl Init {
 
     fn exec(&self, program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
         // todo storage calculation & lamports verify
-        
+
         let accounts_iter = &mut accounts.iter();
 
         let rent_payer = next_account_info(accounts_iter)?;
         let instance_pda = next_account_info(accounts_iter)?;
         let system_program = next_account_info(accounts_iter)?;
-        
+
         assert!(instance_pda.is_writable);
         assert_eq!(instance_pda.owner, system_program.key);
         assert_eq!(system_program.key, &system_program::ID);
@@ -106,7 +106,7 @@ impl Init {
             self.instance_pda_bump_seed,
             make_instance_pda,
         );
-        
+
         invoke_signed(
             &system_instruction::create_account(
                 rent_payer.key,

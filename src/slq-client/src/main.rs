@@ -142,8 +142,7 @@ fn do_admin_command(
             // todo space for admin storage
             let storage: u64 = 1024;
             //  todo solana_sdk::borsh::get_instance_packed_len
-            let lamports =
-                client.get_minimum_balance_for_rent_exemption(storage.try_into()?)?;
+            let lamports = client.get_minimum_balance_for_rent_exemption(storage.try_into()?)?;
 
             let admin_accounts = admin_accounts
                 .iter()

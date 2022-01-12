@@ -4,8 +4,13 @@ use anyhow::{anyhow, bail, Context, Result};
 use log::info;
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::commitment_config::CommitmentConfig;
+use solana_sdk::instruction::Instruction;
+use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{read_keypair_file, Keypair, Signer};
 use solana_sdk::transaction::Transaction;
+use std::convert::TryFrom;
+use std::convert::TryInto;
+use std::str::FromStr;
 use structopt::StructOpt;
 
 pub struct Config {
@@ -81,10 +86,12 @@ fn main() -> Result<()> {
     let opt = Opt::from_args();
 
     let instr = match opt.cmd {
-        Command::Admin(cmd) => {
-            do_admin_command(cmd)?;
-            return Ok(());
-        }
+        Command::Admin(cmd) => do_admin_command(
+            &client,
+            &program_keypair.pubkey(),
+            &config.keypair.pubkey(),
+            cmd,
+        )?,
         Command::CreateVault => slq::CreateVault::build_instruction(
             &program_keypair.pubkey(),
             &config.keypair.pubkey(),
@@ -118,7 +125,12 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn do_admin_command(cmd: AdminCommand) -> Result<()> {
+fn do_admin_command(
+    client: &RpcClient,
+    program_id: &Pubkey,
+    rent_payer: &Pubkey,
+    cmd: AdminCommand,
+) -> Result<Instruction> {
     use slq::admin;
 
     match cmd {
@@ -126,11 +138,30 @@ fn do_admin_command(cmd: AdminCommand) -> Result<()> {
             instance_name,
             approval_threshold,
             admin_accounts,
-        }) => {}
+        }) => {
+            // todo space for admin storage
+            let storage: u64 = 1024;
+            //  todo solana_sdk::borsh::get_instance_packed_len
+            let lamports =
+                client.get_minimum_balance_for_rent_exemption(storage.try_into()?)?;
+
+            let admin_accounts = admin_accounts
+                .iter()
+                .map(|account| Pubkey::from_str(account))
+                .collect::<Result<Vec<Pubkey>, _>>()?;
+
+            admin::Init::build_instruction(
+                program_id,
+                rent_payer,
+                lamports,
+                storage,
+                instance_name,
+                approval_threshold,
+                admin_accounts,
+            )
+        }
         _ => todo!(),
     }
-
-    Ok(())
 }
 
 #[derive(StructOpt, Debug)]

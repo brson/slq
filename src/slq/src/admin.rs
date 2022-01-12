@@ -38,15 +38,20 @@ pub enum SlqAdminInstruction {
 /// - 1: system_program: executable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct Init {
-    pub instance_name: String,
-    pub approval_threshold: u8,
-    pub admin_accounts: Vec<Pubkey>,
-    pub instance_pda_bump_seed: u8,
+    lamports: u64,
+    storage: u64,
+    instance_name: String,
+    approval_threshold: u8,
+    admin_accounts: Vec<Pubkey>,
+    instance_pda_bump_seed: u8,
 }
 
 impl Init {
     pub fn build_instruction(
         program_id: &Pubkey,
+        rent_payer: &Pubkey,
+        lamports: u64,
+        storage: u64,
         instance_name: String,
         approval_threshold: u8,
         admin_accounts: Vec<Pubkey>,
@@ -54,6 +59,8 @@ impl Init {
         let (instance_pda, instance_pda_bump_seed) = make_instance_pda(program_id, &instance_name);
 
         let instr = Init {
+            lamports,
+            storage,
             instance_name,
             approval_threshold,
             admin_accounts,
@@ -65,6 +72,7 @@ impl Init {
         let instr = SlqInstruction::Admin(SlqAdminInstruction::Init(instr));
 
         let accounts = vec![
+            AccountMeta::new(*rent_payer, true),
             AccountMeta::new(instance_pda, false),
             AccountMeta::new_readonly(system_program::ID, false),
         ];
@@ -104,8 +112,11 @@ impl Init {
     }
 
     fn exec(&self, program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+        // todo storage calculation & lamports verify
+        
         let accounts_iter = &mut accounts.iter();
 
+        let rent_payer = next_account_info(accounts_iter)?;
         let instance_pda = next_account_info(accounts_iter)?;
         let system_program = next_account_info(accounts_iter)?;
 
@@ -121,8 +132,27 @@ impl Init {
             self.instance_pda_bump_seed,
             make_instance_pda,
         );
+        
+        invoke_signed(
+            &system_instruction::create_account(
+                rent_payer.key,
+                instance_pda.key,
+                self.lamports,
+                self.storage,
+                program_id,
+            ),
+            &[rent_payer.clone(), instance_pda.clone()],
+            &[&[
+                b"instance",
+                self.instance_name.as_ref(),
+                &[self.instance_pda_bump_seed],
+            ]],
+        )?;
 
-        todo!()
+        // create instance data
+        // and save it 
+        
+        Ok(())
     }
 }
 

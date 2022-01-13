@@ -40,7 +40,7 @@ pub enum SlqInitializeInstanceInstruction {
 /// # Accounts
 ///
 /// - 0: rent_payer - writable, signer
-/// - 1: instance_pda - pda, writable, owner=system_program, uninitialized
+/// - 1: instance_pda - pda, writable, uninitialized
 /// - 2: system_program - executable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct Init {
@@ -91,8 +91,15 @@ impl Init {
             assert!(rent_payer.is_writable);
             assert!(rent_payer.is_signer);
             assert!(instance_pda.is_writable);
-            assert_eq!(instance_pda.owner, system_program.key,
-                       "instance_pda is not owned by the system program");
+            let instance_pda_initialized = {
+                instance_pda.owner != system_program.key ||
+                    instance_pda.lamports.borrow().clone() > 0 ||
+                    instance_pda.data.borrow().len() > 0
+            };
+            if instance_pda_initialized {
+                msg!("instance_pda is not owned by the system program");
+                return Err(ProgramError::AccountAlreadyInitialized);
+            }
             assert_eq!(system_program.key, &system_program::ID,
                        "unexpected system program id");
             assert!(system_program.executable);
@@ -110,7 +117,7 @@ impl Init {
         let rent = Rent::get()?;
         let rent_lamports = rent.minimum_balance(instance_size);
 
-        if **rent_payer.lamports.borrow() < rent_lamports {
+        if rent_payer.lamports.borrow().clone() < rent_lamports {
             msg!("rent_payer does not have the enough lamports to pay instance rent");
             return Err(ProgramError::InsufficientFunds);
         }

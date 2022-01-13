@@ -107,16 +107,16 @@ impl Init {
             make_instance_pda,
         );
 
-        let space = get_instance_packed_len(&SlqInstance::default())?;
+        let instance_size = get_instance_packed_len(&SlqInstance::default())?;
         let rent = Rent::get()?;
-        let needed_lamports = rent.minimum_balance(instance_pda.data_len());
+        let needed_lamports = rent.minimum_balance(instance_size);
 
         if self.lamports < needed_lamports {
             msg!("Instance_pda does not have the enough lamports");
             return Err(ProgramError::InsufficientFunds);
         }
 
-        let space = space.try_into().unwrap();
+        let space = instance_size.try_into().unwrap();
         invoke_signed(
             &system_instruction::create_account(
                 rent_payer.key,

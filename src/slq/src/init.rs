@@ -97,7 +97,7 @@ impl Init {
                     instance_pda.data.borrow().len() > 0
             };
             if instance_pda_initialized {
-                msg!("instance_pda is not owned by the system program");
+                msg!("instance_pda has already been initialized");
                 return Err(ProgramError::AccountAlreadyInitialized);
             }
             assert_eq!(system_program.key, &system_program::ID,
@@ -122,7 +122,7 @@ impl Init {
             return Err(ProgramError::InsufficientFunds);
         }
 
-        let space = instance_size.try_into().unwrap();
+        let space = instance_size.try_into().unwrap(); // error handling
         invoke_signed(
             &system_instruction::create_account(
                 rent_payer.key,

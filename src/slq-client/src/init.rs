@@ -27,7 +27,7 @@ pub (crate) fn do_command(
 ) -> Result<Instruction> {
     let instance_size =
         solana_sdk::borsh::get_instance_packed_len(&SlqInstance::default())?;
-    let lamports = client.get_minimum_balance_for_rent_exemption(instance_size)?;
+    let rent_lamports = client.get_minimum_balance_for_rent_exemption(instance_size)?;
 
     let admin_accounts = cmd.admin_accounts
         .iter()
@@ -37,7 +37,7 @@ pub (crate) fn do_command(
     init::Init::build_instruction(
         program_id,
         rent_payer,
-        lamports,
+        rent_lamports,
         cmd.instance_name,
         cmd.approval_threshold,
         admin_accounts,

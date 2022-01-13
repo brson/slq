@@ -90,15 +90,14 @@ impl Init {
         let instance_pda = next_account_info(accounts_iter)?;
         let system_program = next_account_info(accounts_iter)?;
 
+        assert!(rent_payer.is_writable);
+        assert!(rent_payer.is_signer);
         assert!(instance_pda.is_writable);
-        assert_eq!(instance_pda.owner, system_program.key);
-        assert_eq!(system_program.key, &system_program::ID);
+        assert_eq!(instance_pda.owner, system_program.key,
+                   "instance_pda is not owned by the system program");
+        assert_eq!(system_program.key, &system_program::ID,
+                   "unexpected system program id");
         assert!(system_program.executable);
-
-        if instance_pda.owner != system_program.key {
-            msg!("Instance_pda does not have the correct program id");
-            return Err(ProgramError::IncorrectProgramId);
-        }
 
         verify_pda(
             program_id,

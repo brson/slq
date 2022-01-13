@@ -17,29 +17,16 @@ use slq::init;
 use slq::state::AdminConfig;
 use slq::state::SlqInstance;
 
-use super::InitializeInstanceCommand;
+use super::AdminCommand;
 
 pub (crate) fn do_command(
-    client: &RpcClient, 
+    client: &RpcClient,
     program_id: &Pubkey,
     rent_payer: &Pubkey,
-    cmd: InitializeInstanceCommand,
+    cmd: AdminCommand,
 ) -> Result<Instruction> {
-    let instance_size =
-        solana_sdk::borsh::get_instance_packed_len(&SlqInstance::default())?;
-    let lamports = client.get_minimum_balance_for_rent_exemption(instance_size)?;
-
-    let admin_accounts = cmd.admin_accounts
-        .iter()
-        .map(|account| Pubkey::from_str(account))
-        .collect::<Result<Vec<Pubkey>, _>>()?;
-
-    init::Init::build_instruction(
-        program_id,
-        rent_payer,
-        lamports,
-        cmd.instance_name,
-        cmd.approval_threshold,
-        admin_accounts,
-    )
+    match cmd {
+        _ => todo!(),
+    }
 }
+

@@ -13,6 +13,7 @@ use std::convert::TryInto;
 use std::str::FromStr;
 use structopt::StructOpt;
 
+mod admin;
 mod init;
 
 pub struct Config {
@@ -96,12 +97,14 @@ fn main() -> Result<()> {
                 cmd,
             )?
         }
-        Command::Admin(cmd) => do_admin_command(
-            &client,
-            &program_keypair.pubkey(),
-            &config.keypair.pubkey(),
-            cmd,
-        )?,
+        Command::Admin(cmd) => {
+            admin::do_command(
+                &client,
+                &program_keypair.pubkey(),
+                &config.keypair.pubkey(),
+                cmd,
+            )?
+        }
         Command::CreateVault => slq::CreateVault::build_instruction(
             &program_keypair.pubkey(),
             &config.keypair.pubkey(),
@@ -135,44 +138,6 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn do_admin_command(
-    client: &RpcClient,
-    program_id: &Pubkey,
-    rent_payer: &Pubkey,
-    cmd: AdminCommand,
-) -> Result<Instruction> {
-    use slq::admin;
-    use slq::state::AdminConfig;
-    use slq::state::SlqInstance;
-
-    match cmd {
-        AdminCommand::Init(InitAdminCommand {
-            instance_name,
-            approval_threshold,
-            admin_accounts,
-        }) => {
-            let instance_size =
-                solana_sdk::borsh::get_instance_packed_len(&SlqInstance::default())?;
-            let lamports = client.get_minimum_balance_for_rent_exemption(instance_size)?;
-
-            let admin_accounts = admin_accounts
-                .iter()
-                .map(|account| Pubkey::from_str(account))
-                .collect::<Result<Vec<Pubkey>, _>>()?;
-
-            admin::Init::build_instruction(
-                program_id,
-                rent_payer,
-                lamports,
-                instance_name,
-                approval_threshold,
-                admin_accounts,
-            )
-        }
-        _ => todo!(),
-    }
-}
-
 #[derive(StructOpt, Debug)]
 struct Opt {
     #[structopt(subcommand)]
@@ -197,17 +162,9 @@ struct InitializeInstanceCommand {
 
 #[derive(StructOpt, Debug)]
 enum AdminCommand {
-    Init(InitAdminCommand),
     ChangeApprovalThreshold(ChangeApprovalThresholdAdminCommand),
     AddAdminAccount(AddAdminAccountAdminCommand),
     RemoveAdminAccount(RemoveAdminAccountAdminCommand),
-}
-
-#[derive(StructOpt, Debug)]
-struct InitAdminCommand {
-    instance_name: String,
-    approval_threshold: u8,
-    admin_accounts: Vec<String>,
 }
 
 #[derive(StructOpt, Debug)]

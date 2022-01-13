@@ -39,8 +39,9 @@ pub enum SlqInitializeInstanceInstruction {
 
 /// # Accounts
 ///
-/// - 0: instance_pda: pda, writable, owner=system_program, uninitialized
-/// - 1: system_program: executable
+/// - 0: rent_payer - writable, signer
+/// - 1: instance_pda - pda, writable, owner=system_program, uninitialized
+/// - 2: system_program - executable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct Init {
     lamports: u64,

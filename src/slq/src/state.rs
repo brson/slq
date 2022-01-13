@@ -14,15 +14,16 @@ use solana_program::{
 };
 use std::convert::{TryFrom, TryInto};
 
-#[derive(BorshSerialize, BorshDeserialize, Debug)]
+#[derive(BorshSerialize, BorshDeserialize, Debug, Default)]
 pub struct SlqInstance {
     pub admin_config: AdminConfig,
 }
 
 pub const MAX_ADMIN_ACCOUNTS: usize = 6;
 
-#[derive(BorshSerialize, BorshDeserialize, Debug)]
+#[derive(BorshSerialize, BorshDeserialize, Debug, Default)]
 pub struct AdminConfig {
     pub approval_threshold: u8,
     pub admin_accounts: [Pubkey; MAX_ADMIN_ACCOUNTS],
 }
+

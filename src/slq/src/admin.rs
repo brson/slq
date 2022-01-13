@@ -107,17 +107,15 @@ impl Init {
             make_instance_pda,
         );
 
-        let space = get_instance_packed_len(&instance_dummy())?;
+        let space = get_instance_packed_len(&SlqInstance::default())?;
         let rent = Rent::get()?;
         let needed_lamports = rent.minimum_balance(instance_pda.data_len());
 
-        msg!("self lamports {}", self.lamports);
-        msg!("needed lamports {}", needed_lamports);
         if self.lamports < needed_lamports {
             msg!("Instance_pda does not have the enough lamports");
             return Err(ProgramError::InsufficientFunds);
         }
-        msg!("space {}", space);
+
         let space = space.try_into().unwrap();
         invoke_signed(
             &system_instruction::create_account(
@@ -172,7 +170,6 @@ impl Init {
     }
 }
 
-#[inline(always)]
 pub fn instance_dummy() -> Box<SlqInstance> {
     Box::new(SlqInstance {
         admin_config: AdminConfig {

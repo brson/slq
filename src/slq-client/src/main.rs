@@ -142,7 +142,7 @@ fn do_admin_command(
             admin_accounts,
         }) => {
             use slq::admin::instance_dummy;
-            let instance_size = solana_sdk::borsh::get_instance_packed_len(&instance_dummy())?;
+            let instance_size = solana_sdk::borsh::get_instance_packed_len(&SlqInstance::default())?;
             let lamports = client.get_minimum_balance_for_rent_exemption(instance_size)?;
 
             let admin_accounts = admin_accounts

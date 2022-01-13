@@ -11,11 +11,16 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
     system_instruction, system_program,
+    rent::Rent,
 };
 use std::convert::{TryFrom, TryInto};
+use solana_program::borsh::get_instance_packed_len;
+use solana_program::sysvar::Sysvar;
 
 use crate::state::MAX_ADMIN_ACCOUNTS;
+use crate::state::SlqInstance;
 use crate::SlqInstruction;
+use crate::state::AdminConfig;
 
 pub fn exec(
     program_id: &Pubkey,
@@ -39,7 +44,6 @@ pub enum SlqAdminInstruction {
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct Init {
     lamports: u64,
-    storage: u64,
     instance_name: String,
     approval_threshold: u8,
     admin_accounts: Vec<Pubkey>,
@@ -51,7 +55,6 @@ impl Init {
         program_id: &Pubkey,
         rent_payer: &Pubkey,
         lamports: u64,
-        storage: u64,
         instance_name: String,
         approval_threshold: u8,
         admin_accounts: Vec<Pubkey>,
@@ -60,7 +63,6 @@ impl Init {
 
         let instr = Init {
             lamports,
-            storage,
             instance_name,
             approval_threshold,
             admin_accounts,
@@ -81,8 +83,6 @@ impl Init {
     }
 
     fn exec(&self, program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
-        // todo storage calculation & lamports verify
-
         let accounts_iter = &mut accounts.iter();
 
         let rent_payer = next_account_info(accounts_iter)?;
@@ -107,12 +107,24 @@ impl Init {
             make_instance_pda,
         );
 
+        let space = get_instance_packed_len(&instance_dummy())?;
+        let rent = Rent::get()?;
+        let needed_lamports = rent.minimum_balance(instance_pda.data_len());
+        
+        msg!("self lamports {}", self.lamports);
+        msg!("needed lamports {}", needed_lamports);
+        if self.lamports < needed_lamports {
+            msg!("Instance_pda does not have the enough lamports");
+            return Err(ProgramError::InsufficientFunds);
+        }
+        msg!("space {}", space);
+        let space = space.try_into().unwrap();
         invoke_signed(
             &system_instruction::create_account(
                 rent_payer.key,
                 instance_pda.key,
                 self.lamports,
-                self.storage,
+                space,
                 program_id,
             ),
             &[rent_payer.clone(), instance_pda.clone()],
@@ -158,6 +170,16 @@ impl Init {
 
         Ok(())
     }
+}
+
+#[inline(always)]
+pub fn instance_dummy() -> Box<SlqInstance> {
+    Box::new(SlqInstance {
+        admin_config: AdminConfig {
+            approval_threshold: 1,
+            admin_accounts: [Pubkey::new_unique(); MAX_ADMIN_ACCOUNTS],
+        }
+    })
 }
 
 fn make_instance_pda(program_id: &Pubkey, instance_name: &str) -> (Pubkey, u8) {

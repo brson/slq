@@ -132,17 +132,18 @@ fn do_admin_command(
     cmd: AdminCommand,
 ) -> Result<Instruction> {
     use slq::admin;
-
+    use slq::state::AdminConfig;
+    use slq::state::SlqInstance;
+    
     match cmd {
         AdminCommand::Init(InitAdminCommand {
             instance_name,
             approval_threshold,
             admin_accounts,
         }) => {
-            // todo space for admin storage
-            let storage: u64 = 1024;
-            //  todo solana_sdk::borsh::get_instance_packed_len
-            let lamports = client.get_minimum_balance_for_rent_exemption(storage.try_into()?)?;
+            use slq::admin::instance_dummy;
+            let instance_size = solana_sdk::borsh::get_instance_packed_len(&instance_dummy())?;
+            let lamports = client.get_minimum_balance_for_rent_exemption(instance_size)?;
 
             let admin_accounts = admin_accounts
                 .iter()
@@ -153,7 +154,6 @@ fn do_admin_command(
                 program_id,
                 rent_payer,
                 lamports,
-                storage,
                 instance_name,
                 approval_threshold,
                 admin_accounts,

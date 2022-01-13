@@ -2,7 +2,9 @@
 
 use anyhow::{anyhow, bail, Result};
 use borsh::{BorshDeserialize, BorshSerialize};
+use solana_program::borsh::get_instance_packed_len;
 use solana_program::instruction::{AccountMeta, Instruction};
+use solana_program::sysvar::Sysvar;
 use solana_program::{
     account_info::{next_account_info, next_account_infos, AccountInfo},
     entrypoint::ProgramResult,
@@ -10,17 +12,15 @@ use solana_program::{
     program::invoke_signed,
     program_error::ProgramError,
     pubkey::Pubkey,
-    system_instruction, system_program,
     rent::Rent,
+    system_instruction, system_program,
 };
 use std::convert::{TryFrom, TryInto};
-use solana_program::borsh::get_instance_packed_len;
-use solana_program::sysvar::Sysvar;
 
-use crate::state::MAX_ADMIN_ACCOUNTS;
-use crate::state::SlqInstance;
-use crate::SlqInstruction;
 use crate::state::AdminConfig;
+use crate::state::SlqInstance;
+use crate::state::MAX_ADMIN_ACCOUNTS;
+use crate::SlqInstruction;
 
 pub fn exec(
     program_id: &Pubkey,
@@ -110,7 +110,7 @@ impl Init {
         let space = get_instance_packed_len(&instance_dummy())?;
         let rent = Rent::get()?;
         let needed_lamports = rent.minimum_balance(instance_pda.data_len());
-        
+
         msg!("self lamports {}", self.lamports);
         msg!("needed lamports {}", needed_lamports);
         if self.lamports < needed_lamports {
@@ -178,7 +178,7 @@ pub fn instance_dummy() -> Box<SlqInstance> {
         admin_config: AdminConfig {
             approval_threshold: 1,
             admin_accounts: [Pubkey::new_unique(); MAX_ADMIN_ACCOUNTS],
-        }
+        },
     })
 }
 

@@ -134,7 +134,7 @@ fn do_admin_command(
     use slq::admin;
     use slq::state::AdminConfig;
     use slq::state::SlqInstance;
-    
+
     match cmd {
         AdminCommand::Init(InitAdminCommand {
             instance_name,

@@ -15,6 +15,7 @@ use solana_program::{
 use std::convert::{TryFrom, TryInto};
 
 pub mod admin;
+pub mod init;
 pub mod state;
 
 #[cfg(not(feature = "no-entrypoint"))]
@@ -43,6 +44,9 @@ fn process_instruction(
     // if the system_program == Systemprogram::ID
 
     match instr {
+        SlqInstruction::InitializeInstance(instr) => {
+            init::exec(program_id, accounts, instr)?;
+        }
         SlqInstruction::Admin(instr) => {
             admin::exec(program_id, accounts, instr)?;
         }
@@ -62,6 +66,7 @@ fn process_instruction(
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub enum SlqInstruction {
+    InitializeInstance(init::SlqInitializeInstanceInstruction),
     Admin(admin::SlqAdminInstruction),
     CreateVault(CreateVault),
     DepositToVault(DepositToVault),

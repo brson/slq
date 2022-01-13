@@ -13,6 +13,8 @@ use std::convert::TryInto;
 use std::str::FromStr;
 use structopt::StructOpt;
 
+mod init;
+
 pub struct Config {
     json_rpc_url: String,
     keypair: Keypair,
@@ -86,6 +88,14 @@ fn main() -> Result<()> {
     let opt = Opt::from_args();
 
     let instr = match opt.cmd {
+        Command::InitializeInstance(cmd) => {
+            init::do_command(
+                &client,
+                &program_keypair.pubkey(),
+                &config.keypair.pubkey(),
+                cmd,
+            )?
+        }
         Command::Admin(cmd) => do_admin_command(
             &client,
             &program_keypair.pubkey(),
@@ -171,10 +181,18 @@ struct Opt {
 
 #[derive(StructOpt, Debug)]
 enum Command {
+    InitializeInstance(InitializeInstanceCommand),
     Admin(AdminCommand),
     CreateVault,
     DepositToVault { amount: u64 },
     WithdrawFromVault { amount: u64 }, // todo: withdraw all command
+}
+
+#[derive(StructOpt, Debug)]
+struct InitializeInstanceCommand {
+    instance_name: String,
+    approval_threshold: u8,
+    admin_accounts: Vec<String>,
 }
 
 #[derive(StructOpt, Debug)]

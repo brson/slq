@@ -170,15 +170,6 @@ impl Init {
     }
 }
 
-pub fn instance_dummy() -> Box<SlqInstance> {
-    Box::new(SlqInstance {
-        admin_config: AdminConfig {
-            approval_threshold: 1,
-            admin_accounts: [Pubkey::new_unique(); MAX_ADMIN_ACCOUNTS],
-        },
-    })
-}
-
 fn make_instance_pda(program_id: &Pubkey, instance_name: &str) -> (Pubkey, u8) {
     let seeds = &[b"instance", instance_name.as_bytes()];
     Pubkey::find_program_address(seeds, program_id)

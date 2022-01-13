@@ -90,22 +90,24 @@ impl Init {
         let instance_pda = next_account_info(accounts_iter)?;
         let system_program = next_account_info(accounts_iter)?;
 
-        assert!(rent_payer.is_writable);
-        assert!(rent_payer.is_signer);
-        assert!(instance_pda.is_writable);
-        assert_eq!(instance_pda.owner, system_program.key,
-                   "instance_pda is not owned by the system program");
-        assert_eq!(system_program.key, &system_program::ID,
-                   "unexpected system program id");
-        assert!(system_program.executable);
+        {
+            assert!(rent_payer.is_writable);
+            assert!(rent_payer.is_signer);
+            assert!(instance_pda.is_writable);
+            assert_eq!(instance_pda.owner, system_program.key,
+                       "instance_pda is not owned by the system program");
+            assert_eq!(system_program.key, &system_program::ID,
+                       "unexpected system program id");
+            assert!(system_program.executable);
 
-        verify_pda(
-            program_id,
-            &self.instance_name,
-            instance_pda.key,
-            self.instance_pda_bump_seed,
-            make_instance_pda,
-        );
+            verify_pda(
+                program_id,
+                &self.instance_name,
+                instance_pda.key,
+                self.instance_pda_bump_seed,
+                make_instance_pda,
+            );
+        }
 
         let instance_size = get_instance_packed_len(&SlqInstance::default())?;
         let rent = Rent::get()?;
@@ -182,6 +184,7 @@ fn verify_pda(
     pda_bump_seed: u8,
     make_pda_fn: impl Fn(&Pubkey, &str) -> (Pubkey, u8),
 ) {
+    // todo: better error messages
     let (expected_pda, expected_pda_bump_seed) = make_pda_fn(program_id, seed);
     assert_eq!(pda, &expected_pda);
     assert_eq!(pda_bump_seed, expected_pda_bump_seed);

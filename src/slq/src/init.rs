@@ -44,7 +44,6 @@ pub enum SlqInitializeInstanceInstruction {
 /// - 2: system_program - executable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct Init {
-    rent_lamports: u64,
     instance_name: String,
     approval_threshold: u8,
     admin_accounts: Vec<Pubkey>,
@@ -55,7 +54,6 @@ impl Init {
     pub fn build_instruction(
         program_id: &Pubkey,
         rent_payer: &Pubkey,
-        rent_lamports: u64,
         instance_name: String,
         approval_threshold: u8,
         admin_accounts: Vec<Pubkey>,
@@ -63,7 +61,6 @@ impl Init {
         let (instance_pda, instance_pda_bump_seed) = make_instance_pda(program_id, &instance_name);
 
         let instr = Init {
-            rent_lamports,
             instance_name,
             approval_threshold,
             admin_accounts,
@@ -111,10 +108,10 @@ impl Init {
 
         let instance_size = get_instance_packed_len(&SlqInstance::default())?;
         let rent = Rent::get()?;
-        let needed_lamports = rent.minimum_balance(instance_size);
+        let rent_lamports = rent.minimum_balance(instance_size);
 
-        if self.rent_lamports < needed_lamports {
-            msg!("Instance_pda does not have the enough lamports");
+        if **rent_payer.lamports.borrow() < rent_lamports {
+            msg!("rent_payer does not have the enough lamports to pay instance rent");
             return Err(ProgramError::InsufficientFunds);
         }
 
@@ -123,7 +120,7 @@ impl Init {
             &system_instruction::create_account(
                 rent_payer.key,
                 instance_pda.key,
-                self.rent_lamports,
+                rent_lamports,
                 space,
                 program_id,
             ),

@@ -26,4 +26,3 @@ pub struct AdminConfig {
     pub approval_threshold: u8,
     pub admin_accounts: [Pubkey; MAX_ADMIN_ACCOUNTS],
 }
-

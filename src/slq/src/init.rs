@@ -139,9 +139,18 @@ impl Init {
             ]],
         )?;
 
-        msg!("init instance_pda's data");
+        let instance = SlqInstance {
+            admin_config: AdminConfig {
+                approval_threshold: self.approval_threshold,
+                admin_accounts: create_admin_accounts_array(&self.admin_accounts),
+            },
+        };
 
-        Ok(self.serialize(&mut &mut instance_pda.data.borrow_mut()[..])?)
+        let instance_pda_data = &mut *instance_pda.data.borrow_mut();
+
+        instance.serialize(instance_pda_data)?;
+
+        Ok(())
     }
 
     fn validate(&self) -> Result<()> {
@@ -192,4 +201,14 @@ fn verify_pda(
     let (expected_pda, expected_pda_bump_seed) = make_pda_fn(program_id, seed);
     assert_eq!(pda, &expected_pda);
     assert_eq!(pda_bump_seed, expected_pda_bump_seed);
+}
+
+fn create_admin_accounts_array(accounts: &[Pubkey]) -> [Pubkey; MAX_ADMIN_ACCOUNTS] {
+    let mut array = [Pubkey::default(); MAX_ADMIN_ACCOUNTS];
+    assert!(accounts.len() <= array.len());
+    for (i, account) in accounts.iter().enumerate() {
+        array[i] = *account;
+    }
+
+    array
 }

@@ -12,6 +12,9 @@ use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::str::FromStr;
 use structopt::StructOpt;
+use slq::init::make_instance_pda;
+use slq::state::SlqInstance;
+use borsh::de::BorshDeserialize;
 
 mod admin;
 mod init;
@@ -89,6 +92,15 @@ fn main() -> Result<()> {
     let opt = Opt::from_args();
 
     let instr = match opt.cmd {
+        Command::ReadInstance { instance_name } => {
+            let (instance_pubkey, _) = make_instance_pda(&program_keypair.pubkey(), &instance_name);
+            let instance_account = client.get_account(&instance_pubkey)?;
+            let instance_account_data = SlqInstance::try_from_slice(&instance_account.data)?;
+
+            println!("{:#?}", instance_account_data);
+            
+            return Ok(());
+        }
         Command::InitializeInstance(cmd) => {
             init::do_command(
                 &client,
@@ -147,6 +159,7 @@ struct Opt {
 #[derive(StructOpt, Debug)]
 enum Command {
     InitializeInstance(InitializeInstanceCommand),
+    ReadInstance { instance_name: String },
     Admin(AdminCommand),
     CreateVault,
     DepositToVault { amount: u64 },

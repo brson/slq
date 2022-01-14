@@ -15,6 +15,8 @@ use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::str::FromStr;
 use structopt::StructOpt;
+use admin::AdminCommand;
+use init::InitializeInstanceCommand;
 
 mod admin;
 mod init;
@@ -34,6 +36,7 @@ fn main() -> Result<()> {
 
     let instr = match opt.cmd {
         Command::GetInstanceState { instance_name } => {
+            // todo: add program_id to config
             let (instance_pubkey, _) = make_instance_pda(&program_keypair.pubkey(), &instance_name);
             let instance_account = client.get_account(&instance_pubkey)?;
             let instance_account_data = SlqInstance::try_from_slice(&instance_account.data)?;
@@ -85,6 +88,22 @@ fn main() -> Result<()> {
     info!("sig: {}", sig);
 
     Ok(())
+}
+
+#[derive(StructOpt, Debug)]
+struct Opt {
+    #[structopt(subcommand)]
+    cmd: Command,
+}
+
+#[derive(StructOpt, Debug)]
+enum Command {
+    InitializeInstance(InitializeInstanceCommand),
+    GetInstanceState { instance_name: String },
+    Admin(AdminCommand),
+    CreateVault,
+    DepositToVault { amount: u64 },
+    WithdrawFromVault { amount: u64 }, // todo: withdraw-all command
 }
 
 pub struct Config {
@@ -145,52 +164,4 @@ pub fn get_program_keypair(client: &RpcClient) -> Result<Keypair> {
     }
 
     Ok(program_keypair)
-}
-
-#[derive(StructOpt, Debug)]
-struct Opt {
-    #[structopt(subcommand)]
-    cmd: Command,
-}
-
-#[derive(StructOpt, Debug)]
-enum Command {
-    InitializeInstance(InitializeInstanceCommand),
-    GetInstanceState { instance_name: String },
-    Admin(AdminCommand),
-    CreateVault,
-    DepositToVault { amount: u64 },
-    WithdrawFromVault { amount: u64 }, // todo: withdraw all command
-}
-
-#[derive(StructOpt, Debug)]
-struct InitializeInstanceCommand {
-    instance_name: String,
-    approval_threshold: u8,
-    admin_accounts: Vec<String>,
-}
-
-#[derive(StructOpt, Debug)]
-enum AdminCommand {
-    ChangeApprovalThreshold(ChangeApprovalThresholdAdminCommand),
-    AddAdminAccount(AddAdminAccountAdminCommand),
-    RemoveAdminAccount(RemoveAdminAccountAdminCommand),
-}
-
-#[derive(StructOpt, Debug)]
-struct ChangeApprovalThresholdAdminCommand {
-    instance_name: String,
-    approval_threshold: u8,
-}
-
-#[derive(StructOpt, Debug)]
-struct AddAdminAccountAdminCommand {
-    instance_name: String,
-    account: String,
-}
-
-#[derive(StructOpt, Debug)]
-struct RemoveAdminAccountAdminCommand {
-    instance_name: String,
-    account: String,
 }

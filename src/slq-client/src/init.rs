@@ -17,7 +17,12 @@ use slq::init;
 use slq::state::AdminConfig;
 use slq::state::SlqInstance;
 
-use super::InitializeInstanceCommand;
+#[derive(StructOpt, Debug)]
+pub struct InitializeInstanceCommand {
+    instance_name: String,
+    approval_threshold: u8,
+    admin_accounts: Vec<String>,
+}
 
 pub(crate) fn do_command(
     client: &RpcClient,

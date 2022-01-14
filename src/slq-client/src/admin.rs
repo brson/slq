@@ -17,7 +17,30 @@ use slq::init;
 use slq::state::AdminConfig;
 use slq::state::SlqInstance;
 
-use super::AdminCommand;
+#[derive(StructOpt, Debug)]
+pub enum AdminCommand {
+    ChangeApprovalThreshold(ChangeApprovalThresholdAdminCommand),
+    AddAdminAccount(AddAdminAccountAdminCommand),
+    RemoveAdminAccount(RemoveAdminAccountAdminCommand),
+}
+
+#[derive(StructOpt, Debug)]
+pub struct ChangeApprovalThresholdAdminCommand {
+    instance_name: String,
+    approval_threshold: u8,
+}
+
+#[derive(StructOpt, Debug)]
+pub struct AddAdminAccountAdminCommand {
+    instance_name: String,
+    account: String,
+}
+
+#[derive(StructOpt, Debug)]
+pub struct RemoveAdminAccountAdminCommand {
+    instance_name: String,
+    account: String,
+}
 
 pub(crate) fn do_command(
     client: &RpcClient,
@@ -26,6 +49,7 @@ pub(crate) fn do_command(
     cmd: AdminCommand,
 ) -> Result<Instruction> {
     match cmd {
+        
         _ => todo!(),
     }
 }

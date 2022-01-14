@@ -32,5 +32,5 @@ pub fn exec(
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub enum SlqAdminInstruction {
-    Dummy
+    Dummy,
 }

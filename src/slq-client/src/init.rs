@@ -19,13 +19,14 @@ use slq::state::SlqInstance;
 
 use super::InitializeInstanceCommand;
 
-pub (crate) fn do_command(
-    client: &RpcClient, 
+pub(crate) fn do_command(
+    client: &RpcClient,
     program_id: &Pubkey,
     rent_payer: &Pubkey,
     cmd: InitializeInstanceCommand,
 ) -> Result<Instruction> {
-    let admin_accounts = cmd.admin_accounts
+    let admin_accounts = cmd
+        .admin_accounts
         .iter()
         .map(|account| Pubkey::from_str(account))
         .collect::<Result<Vec<Pubkey>, _>>()?;

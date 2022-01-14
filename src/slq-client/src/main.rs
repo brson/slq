@@ -1,7 +1,10 @@
 #![allow(unused)]
 
 use anyhow::{anyhow, bail, Context, Result};
+use borsh::de::BorshDeserialize;
 use log::info;
+use slq::init::make_instance_pda;
+use slq::state::SlqInstance;
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::instruction::Instruction;
@@ -12,9 +15,6 @@ use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::str::FromStr;
 use structopt::StructOpt;
-use slq::init::make_instance_pda;
-use slq::state::SlqInstance;
-use borsh::de::BorshDeserialize;
 
 mod admin;
 mod init;
@@ -98,25 +98,21 @@ fn main() -> Result<()> {
             let instance_account_data = SlqInstance::try_from_slice(&instance_account.data)?;
 
             println!("{:#?}", instance_account_data);
-            
+
             return Ok(());
         }
-        Command::InitializeInstance(cmd) => {
-            init::do_command(
-                &client,
-                &program_keypair.pubkey(),
-                &config.keypair.pubkey(),
-                cmd,
-            )?
-        }
-        Command::Admin(cmd) => {
-            admin::do_command(
-                &client,
-                &program_keypair.pubkey(),
-                &config.keypair.pubkey(),
-                cmd,
-            )?
-        }
+        Command::InitializeInstance(cmd) => init::do_command(
+            &client,
+            &program_keypair.pubkey(),
+            &config.keypair.pubkey(),
+            cmd,
+        )?,
+        Command::Admin(cmd) => admin::do_command(
+            &client,
+            &program_keypair.pubkey(),
+            &config.keypair.pubkey(),
+            cmd,
+        )?,
         Command::CreateVault => slq::CreateVault::build_instruction(
             &program_keypair.pubkey(),
             &config.keypair.pubkey(),

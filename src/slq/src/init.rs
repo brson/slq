@@ -69,7 +69,8 @@ impl Init {
 
         instr.validate()?;
 
-        let instr = SlqInstruction::InitializeInstance(SlqInitializeInstanceInstruction::Init(instr));
+        let instr =
+            SlqInstruction::InitializeInstance(SlqInitializeInstanceInstruction::Init(instr));
 
         let accounts = vec![
             AccountMeta::new(*rent_payer, true),
@@ -92,16 +93,19 @@ impl Init {
             assert!(rent_payer.is_signer);
             assert!(instance_pda.is_writable);
             let instance_pda_initialized = {
-                instance_pda.owner != system_program.key ||
-                    instance_pda.lamports.borrow().clone() > 0 ||
-                    instance_pda.data.borrow().len() > 0
+                instance_pda.owner != system_program.key
+                    || instance_pda.lamports.borrow().clone() > 0
+                    || instance_pda.data.borrow().len() > 0
             };
             if instance_pda_initialized {
                 msg!("instance_pda has already been initialized");
                 return Err(ProgramError::AccountAlreadyInitialized);
             }
-            assert_eq!(system_program.key, &system_program::ID,
-                       "unexpected system program id");
+            assert_eq!(
+                system_program.key,
+                &system_program::ID,
+                "unexpected system program id"
+            );
             assert!(system_program.executable);
 
             verify_pda(

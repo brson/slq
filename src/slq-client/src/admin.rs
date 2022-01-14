@@ -19,7 +19,7 @@ use slq::state::SlqInstance;
 
 use super::AdminCommand;
 
-pub (crate) fn do_command(
+pub(crate) fn do_command(
     client: &RpcClient,
     program_id: &Pubkey,
     rent_payer: &Pubkey,
@@ -29,4 +29,3 @@ pub (crate) fn do_command(
         _ => todo!(),
     }
 }
-

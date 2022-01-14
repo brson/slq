@@ -27,10 +27,31 @@ pub fn exec(
     accounts: &[AccountInfo],
     instr: SlqAdminInstruction,
 ) -> ProgramResult {
-    todo!()
+    match instr {
+        SlqAdminInstruction::ChangeApprovalThreshold(instr) => todo!(),
+        SlqAdminInstruction::AddAdminAccount(instr) => todo!(),
+        SlqAdminInstruction::RemoveAdminAccount(instr) => todo!(),
+    }
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub enum SlqAdminInstruction {
-    Dummy,
+    ChangeApprovalThreshold(ChangeApprovalThresholdAdmin),
+    AddAdminAccount(AddAdminAccountAdmin),
+    RemoveAdminAccount(RemoveAdminAccountAdmin),
+}
+
+#[derive(BorshSerialize, BorshDeserialize, Debug)]
+pub struct ChangeApprovalThresholdAdmin {
+
+}
+
+#[derive(BorshSerialize, BorshDeserialize, Debug)]
+pub struct AddAdminAccountAdmin {
+
+}
+
+#[derive(BorshSerialize, BorshDeserialize, Debug)]
+pub struct RemoveAdminAccountAdmin {
+
 }

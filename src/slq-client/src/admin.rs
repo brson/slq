@@ -49,7 +49,10 @@ pub(crate) fn do_command(
     cmd: AdminCommand,
 ) -> Result<Instruction> {
     match cmd {
-        
-        _ => todo!(),
+        AdminCommand::ChangeApprovalThreshold(cmd) => {
+            todo!()
+        }
+        AdminCommand::AddAdminAccount(cmd) => todo!(),
+        AdminCommand::RemoveAdminAccount(cmd) => todo!(),
     }
 }

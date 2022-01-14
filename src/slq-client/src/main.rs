@@ -92,7 +92,7 @@ fn main() -> Result<()> {
     let opt = Opt::from_args();
 
     let instr = match opt.cmd {
-        Command::ReadInstance { instance_name } => {
+        Command::GetInstanceState { instance_name } => {
             let (instance_pubkey, _) = make_instance_pda(&program_keypair.pubkey(), &instance_name);
             let instance_account = client.get_account(&instance_pubkey)?;
             let instance_account_data = SlqInstance::try_from_slice(&instance_account.data)?;
@@ -155,7 +155,7 @@ struct Opt {
 #[derive(StructOpt, Debug)]
 enum Command {
     InitializeInstance(InitializeInstanceCommand),
-    ReadInstance { instance_name: String },
+    GetInstanceState { instance_name: String },
     Admin(AdminCommand),
     CreateVault,
     DepositToVault { amount: u64 },

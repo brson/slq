@@ -17,11 +17,11 @@ use solana_program::{
 };
 use std::convert::{TryFrom, TryInto};
 
+use crate::init::make_instance_pda;
 use crate::state::AdminConfig;
 use crate::state::SlqInstance;
 use crate::state::MAX_ADMIN_ACCOUNTS;
 use crate::SlqInstruction;
-use crate::init::make_instance_pda;
 
 pub fn exec(
     program_id: &Pubkey,
@@ -60,16 +60,16 @@ impl ChangeApprovalThresholdAdmin {
         instance_name: String,
         approval_threshold: u8,
     ) -> Result<Instruction> {
-
         // todo varification
 
         let (instance_pda, _) = make_instance_pda(program_id, &instance_name);
 
-        let instr =
-            SlqInstruction::Admin(SlqAdminInstruction::ChangeApprovalThreshold(ChangeApprovalThresholdAdmin {
+        let instr = SlqInstruction::Admin(SlqAdminInstruction::ChangeApprovalThreshold(
+            ChangeApprovalThresholdAdmin {
                 instance_name,
                 approval_threshold,
-            }));
+            },
+        ));
 
         let accounts = vec![
             AccountMeta::new(*rent_payer, true),
@@ -82,11 +82,7 @@ impl ChangeApprovalThresholdAdmin {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
-pub struct AddAdminAccountAdmin {
-
-}
+pub struct AddAdminAccountAdmin {}
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
-pub struct RemoveAdminAccountAdmin {
-
-}
+pub struct RemoveAdminAccountAdmin {}

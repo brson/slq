@@ -13,12 +13,12 @@ use std::convert::TryInto;
 use std::str::FromStr;
 use structopt::StructOpt;
 
+use borsh::BorshDeserialize;
+use slq::admin::ChangeApprovalThresholdAdmin;
 use slq::init;
+use slq::init::make_instance_pda;
 use slq::state::AdminConfig;
 use slq::state::SlqInstance;
-use slq::init::make_instance_pda;
-use slq::admin::ChangeApprovalThresholdAdmin;
-use borsh::BorshDeserialize;
 
 #[derive(StructOpt, Debug)]
 pub enum AdminCommand {
@@ -57,7 +57,9 @@ pub(crate) fn do_command(
             let instance_account = client.get_account(&instance_pubkey)?;
             let slq_instance = SlqInstance::try_from_slice(&instance_account.data)?;
 
-            let admin_accounts = slq_instance.admin_config.admin_accounts
+            let admin_accounts = slq_instance
+                .admin_config
+                .admin_accounts
                 .iter()
                 .filter(|account| **account != Pubkey::default())
                 .map(|account| *account)
@@ -67,7 +69,10 @@ pub(crate) fn do_command(
 
             let cmd_approval_threshold = usize::from(cmd.approval_threshold);
             if cmd_approval_threshold > admin_accounts.len() {
-                bail!("approval threshold must be less than {}, the number of administrators", admin_accounts.len());
+                bail!(
+                    "approval threshold must be less than {}, the number of administrators",
+                    admin_accounts.len()
+                );
             }
             if cmd_approval_threshold == admin_accounts.len() {
                 bail!("approval threshold is {} already", cmd.approval_threshold);

@@ -1,7 +1,9 @@
 #![allow(unused)]
 
+use admin::AdminCommand;
 use anyhow::{anyhow, bail, Context, Result};
 use borsh::de::BorshDeserialize;
+use init::InitializeInstanceCommand;
 use log::info;
 use slq::init::make_instance_pda;
 use slq::state::SlqInstance;
@@ -15,12 +17,9 @@ use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::str::FromStr;
 use structopt::StructOpt;
-use admin::AdminCommand;
-use init::InitializeInstanceCommand;
 
 mod admin;
 mod init;
-
 
 fn main() -> Result<()> {
     env_logger::init();

@@ -46,7 +46,6 @@ pub enum SlqAdminInstruction {
 ///
 /// - 0: rent_payer - writable, signer
 /// - 1: instance_pda - pda, writable, uninitialized
-/// - 2: system_program - executable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct ChangeApprovalThresholdAdmin {
     instance_name: String,

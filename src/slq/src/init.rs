@@ -94,7 +94,7 @@ impl Init {
             assert!(instance_pda.is_writable);
             let instance_pda_initialized = {
                 instance_pda.owner != system_program.key
-                    || instance_pda.lamports.borrow().clone() > 0
+                    || **instance_pda.lamports.borrow() > 0
                     || instance_pda.data.borrow().len() > 0
             };
             if instance_pda_initialized {
@@ -121,7 +121,7 @@ impl Init {
         let rent = Rent::get()?;
         let rent_lamports = rent.minimum_balance(instance_size);
 
-        if rent_payer.lamports.borrow().clone() < rent_lamports {
+        if **rent_payer.lamports.borrow() < rent_lamports {
             msg!("rent_payer does not have the enough lamports to pay instance rent");
             return Err(ProgramError::InsufficientFunds);
         }
@@ -162,7 +162,7 @@ impl Init {
             bail!("approval threshold must be greater than 0");
         }
 
-        if self.admin_accounts.len() == 0 {
+        if self.admin_accounts.is_empty() {
             bail!("must have greater than 0 admin accounts");
         }
 

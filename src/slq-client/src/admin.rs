@@ -53,7 +53,7 @@ pub(crate) fn do_command(
 ) -> Result<Instruction> {
     match cmd {
         AdminCommand::ChangeApprovalThreshold(cmd) => {
-            let (instance_pubkey, _) = make_instance_pda(&program_id, &cmd.instance_name);
+            let (instance_pubkey, _) = make_instance_pda(program_id, &cmd.instance_name);
             let instance_account = client.get_account(&instance_pubkey)?;
             let slq_instance = SlqInstance::try_from_slice(&instance_account.data)?;
 
@@ -61,8 +61,7 @@ pub(crate) fn do_command(
                 .admin_config
                 .admin_accounts
                 .iter()
-                .filter(|account| **account != Pubkey::default())
-                .map(|account| *account)
+                .filter(|account| **account != Pubkey::default()).copied()
                 .collect::<Vec<Pubkey>>();
 
             dbg!(&admin_accounts);

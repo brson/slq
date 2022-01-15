@@ -114,7 +114,7 @@ fn load_config() -> Result<Config> {
     let config_file = solana_cli_config::CONFIG_FILE
         .as_ref()
         .ok_or_else(|| anyhow!("config file path"))?;
-    let cli_config = solana_cli_config::Config::load(&config_file)?;
+    let cli_config = solana_cli_config::Config::load(config_file)?;
     let json_rpc_url = cli_config.json_rpc_url;
     let keypair = read_keypair_file(&cli_config.keypair_path).map_err(|e| anyhow!("{}", e))?;
     Ok(Config {

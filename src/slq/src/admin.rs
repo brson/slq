@@ -91,11 +91,7 @@ impl ChangeApprovalThresholdAdmin {
             assert!(rent_payer.is_writable);
             assert!(rent_payer.is_signer);
             assert!(instance_pda.is_writable);
-            assert_eq!(
-                instance_pda.owner,
-                program_id,
-                "unexpected program id"
-            );
+            assert_eq!(instance_pda.owner, program_id, "unexpected program id");
 
             verify_pda(
                 program_id,
@@ -109,7 +105,7 @@ impl ChangeApprovalThresholdAdmin {
         let mut instance = SlqInstance::try_from_slice(&instance_pda.data.borrow_mut())?;
         instance.admin_config.approval_threshold = self.approval_threshold;
         instance.serialize(&mut *instance_pda.data.borrow_mut())?;
-        
+
         Ok(())
     }
 }

@@ -65,12 +65,10 @@ pub(crate) fn do_command(
                 .copied()
                 .collect::<Vec<Pubkey>>();
 
-            dbg!(&admin_accounts);
-
             let cmd_approval_threshold = usize::from(cmd.approval_threshold);
             if cmd_approval_threshold > admin_accounts.len() {
                 bail!(
-                    "approval threshold must be less than {}, the number of administrators",
+                    "approval threshold must be less than or equal to {}, the number of administrators",
                     admin_accounts.len()
                 );
             }

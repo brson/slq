@@ -194,7 +194,7 @@ pub fn make_instance_pda(program_id: &Pubkey, instance_name: &str) -> (Pubkey, u
     Pubkey::find_program_address(seeds, program_id)
 }
 
-fn verify_pda(
+pub fn verify_pda(
     program_id: &Pubkey,
     seed: &str,
     pda: &Pubkey,

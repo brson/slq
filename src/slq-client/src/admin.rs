@@ -61,7 +61,8 @@ pub(crate) fn do_command(
                 .admin_config
                 .admin_accounts
                 .iter()
-                .filter(|account| **account != Pubkey::default()).copied()
+                .filter(|account| **account != Pubkey::default())
+                .copied()
                 .collect::<Vec<Pubkey>>();
 
             dbg!(&admin_accounts);

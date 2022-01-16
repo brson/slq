@@ -30,7 +30,7 @@ pub fn exec(
 ) -> ProgramResult {
     match instr {
         SlqAdminInstruction::ChangeApprovalThreshold(instr) => instr.exec(program_id, accounts),
-        SlqAdminInstruction::AddAdminAccount(instr) => todo!(),
+        SlqAdminInstruction::AddAdminAccount(instr) => instr.exec(program_id, accounts),
         SlqAdminInstruction::RemoveAdminAccount(instr) => todo!(),
     }
 }
@@ -45,7 +45,7 @@ pub enum SlqAdminInstruction {
 /// # Accounts
 ///
 /// - 0: rent_payer - writable, signer
-/// - 1: instance_pda - pda, writable, uninitialized
+/// - 1: instance_pda - pda, writable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct ChangeApprovalThresholdAdmin {
     instance_name: String,
@@ -61,7 +61,7 @@ impl ChangeApprovalThresholdAdmin {
         approval_threshold: u8,
     ) -> Result<Instruction> {
         let (instance_pda, instance_pda_bump_seed) = make_instance_pda(program_id, &instance_name);
-
+        
         let instr = SlqInstruction::Admin(SlqAdminInstruction::ChangeApprovalThreshold(
             ChangeApprovalThresholdAdmin {
                 instance_name,
@@ -107,8 +107,53 @@ impl ChangeApprovalThresholdAdmin {
     }
 }
 
+/// # Accounts
+///
+/// - 0: rent_payer - writable, signer
+/// - 1: instance_pda - pda, writable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
-pub struct AddAdminAccountAdmin {}
+pub struct AddAdminAccountAdmin {
+    instance_name: String,
+    new_admin_account: Pubkey,
+    instance_pda_bump_seed: u8,
+}
 
+impl AddAdminAccountAdmin {
+    pub fn build_instruction(
+        program_id: &Pubkey,
+        rent_payer: &Pubkey,
+        instance_name: String,
+        new_admin_account: Pubkey,
+    ) -> Result<Instruction> {
+        let (instance_pda, instance_pda_bump_seed) = make_instance_pda(program_id, &instance_name);
+
+        let instr = SlqInstruction::Admin(SlqAdminInstruction::AddAdminAccount(AddAdminAccountAdmin {
+            instance_name,
+            new_admin_account,
+            instance_pda_bump_seed,
+        },
+        ));
+
+        let accounts = vec![
+            AccountMeta::new(*rent_payer, true),
+            AccountMeta::new(instance_pda, false),
+        ];
+
+        Ok(Instruction::new_with_borsh(*program_id, &instr, accounts))
+    }
+
+    fn exec(&self, program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+        todo!()
+    }
+}
+
+/// # Accounts
+///
+/// - 0: rent_payer - writable, signer
+/// - 1: instance_pda - pda, writable
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
-pub struct RemoveAdminAccountAdmin {}
+pub struct RemoveAdminAccountAdmin {
+    instance_name: String,
+    to_remove_admin_account: Pubkey,
+    instance_pda_bump_seed: u8,
+}

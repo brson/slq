@@ -14,11 +14,10 @@ use std::str::FromStr;
 use structopt::StructOpt;
 
 use borsh::BorshDeserialize;
-use slq::admin::ChangeApprovalThresholdAdmin;
+use slq::admin::{ChangeApprovalThresholdAdmin, AddAdminAccountAdmin, RemoveAdminAccountAdmin};
 use slq::init;
 use slq::init::make_instance_pda;
-use slq::state::AdminConfig;
-use slq::state::SlqInstance;
+use slq::state::{AdminConfig, SlqInstance, MAX_ADMIN_ACCOUNTS};
 
 #[derive(StructOpt, Debug)]
 pub enum AdminCommand {
@@ -55,8 +54,12 @@ pub(crate) fn do_command(
         AdminCommand::ChangeApprovalThreshold(cmd) => {
             change_approval_threshold_instruction(client, program_id, rent_payer, cmd)
         }
-        AdminCommand::AddAdminAccount(cmd) => todo!(),
-        AdminCommand::RemoveAdminAccount(cmd) => todo!(),
+        AdminCommand::AddAdminAccount(cmd) => {
+            add_admin_account_instruction(client, program_id, rent_payer, cmd)
+        }
+        AdminCommand::RemoveAdminAccount(cmd) => {
+            remove_admin_account_instruction(client, program_id, rent_payer, cmd)
+        }
     }
 }
 
@@ -99,4 +102,47 @@ fn change_approval_threshold_instruction(
         cmd.instance_name,
         cmd.approval_threshold,
     )
+}
+
+fn add_admin_account_instruction(
+    client: &RpcClient,
+    program_id: &Pubkey,
+    rent_payer: &Pubkey,
+    cmd: AddAdminAccountAdminCommand,
+) -> Result<Instruction> {
+    let (instance_pubkey, _) = make_instance_pda(program_id, &cmd.instance_name);
+    let instance_account = client.get_account(&instance_pubkey)?;
+    let slq_instance = SlqInstance::try_from_slice(&instance_account.data)?;
+
+    let new_admin_account = Pubkey::from_str(&cmd.account)?;
+    let mut admin_accounts = slq_instance
+        .admin_config
+        .admin_accounts
+        .iter()
+        .filter(|account| **account != Pubkey::default())
+        .copied()
+        .collect::<Vec<Pubkey>>();
+
+    if admin_accounts.len() == MAX_ADMIN_ACCOUNTS {
+        bail!("there are already {} admin accounts, remove one to add a new account", MAX_ADMIN_ACCOUNTS);
+    }
+    if admin_accounts.contains(&new_admin_account) {
+        bail!("account {} is already in the current admin list", &new_admin_account);
+    }
+
+    AddAdminAccountAdmin::build_instruction(
+        program_id,
+        rent_payer,
+        cmd.instance_name,
+        new_admin_account,
+    )
+}
+
+fn remove_admin_account_instruction(
+    client: &RpcClient,
+    program_id: &Pubkey,
+    rent_payer: &Pubkey,
+    cmd: RemoveAdminAccountAdminCommand,
+) -> Result<Instruction> {
+    todo!()
 }

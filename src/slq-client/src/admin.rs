@@ -91,7 +91,6 @@ fn change_approval_threshold_instruction(
         if cmd_approval_threshold == admin_accounts.len() {
             bail!("approval threshold is {} already", cmd.approval_threshold);
         }
-
     }
 
     ChangeApprovalThresholdAdmin::build_instruction(

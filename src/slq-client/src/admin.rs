@@ -14,7 +14,7 @@ use std::str::FromStr;
 use structopt::StructOpt;
 
 use borsh::BorshDeserialize;
-use slq::admin::{ChangeApprovalThresholdAdmin, AddAdminAccountAdmin, RemoveAdminAccountAdmin};
+use slq::admin::{AddAdminAccountAdmin, ChangeApprovalThresholdAdmin, RemoveAdminAccountAdmin};
 use slq::init;
 use slq::init::make_instance_pda;
 use slq::state::{AdminConfig, SlqInstance, MAX_ADMIN_ACCOUNTS};
@@ -124,7 +124,10 @@ fn add_admin_account_instruction(
         .collect::<Vec<Pubkey>>();
 
     if admin_accounts.len() == MAX_ADMIN_ACCOUNTS {
-        bail!("there are already {} admin accounts, remove one to add a new account", MAX_ADMIN_ACCOUNTS);
+        bail!(
+            "there are already {} admin accounts, remove one to add a new account",
+            MAX_ADMIN_ACCOUNTS
+        );
     }
     if admin_accounts.contains(&new_admin_account) {
         bail!("account {} already exists", &new_admin_account);

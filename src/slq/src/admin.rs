@@ -17,7 +17,7 @@ use solana_program::{
 };
 use std::convert::{TryFrom, TryInto};
 
-use crate::init::{make_instance_pda, verify_pda, create_admin_accounts_array};
+use crate::init::{create_admin_accounts_array, make_instance_pda, verify_pda};
 use crate::state::AdminConfig;
 use crate::state::SlqInstance;
 use crate::state::MAX_ADMIN_ACCOUNTS;
@@ -61,7 +61,7 @@ impl ChangeApprovalThresholdAdmin {
         approval_threshold: u8,
     ) -> Result<Instruction> {
         let (instance_pda, instance_pda_bump_seed) = make_instance_pda(program_id, &instance_name);
-        
+
         let instr = SlqInstruction::Admin(SlqAdminInstruction::ChangeApprovalThreshold(
             ChangeApprovalThresholdAdmin {
                 instance_name,
@@ -127,12 +127,12 @@ impl AddAdminAccountAdmin {
     ) -> Result<Instruction> {
         let (instance_pda, instance_pda_bump_seed) = make_instance_pda(program_id, &instance_name);
 
-        let instr = SlqInstruction::Admin(SlqAdminInstruction::AddAdminAccount(AddAdminAccountAdmin {
-            instance_name,
-            new_admin_account,
-            instance_pda_bump_seed,
-        },
-        ));
+        let instr =
+            SlqInstruction::Admin(SlqAdminInstruction::AddAdminAccount(AddAdminAccountAdmin {
+                instance_name,
+                new_admin_account,
+                instance_pda_bump_seed,
+            }));
 
         let accounts = vec![
             AccountMeta::new(*rent_payer, true),
@@ -175,8 +175,8 @@ impl AddAdminAccountAdmin {
 
         admin_accounts.push(self.new_admin_account);
 
-        instance.admin_config.admin_accounts = create_admin_accounts_array(&admin_accounts); 
-        
+        instance.admin_config.admin_accounts = create_admin_accounts_array(&admin_accounts);
+
         instance.serialize(&mut *instance_pda.data.borrow_mut())?;
 
         Ok(())

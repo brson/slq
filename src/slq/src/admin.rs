@@ -203,12 +203,13 @@ impl RemoveAdminAccountAdmin {
     ) -> Result<Instruction> {
         let (instance_pda, instance_pda_bump_seed) = make_instance_pda(program_id, &instance_name);
 
-        let instr =
-            SlqInstruction::Admin(SlqAdminInstruction::RemoveAdminAccount(RemoveAdminAccountAdmin {
+        let instr = SlqInstruction::Admin(SlqAdminInstruction::RemoveAdminAccount(
+            RemoveAdminAccountAdmin {
                 instance_name,
                 to_remove_admin_account,
                 instance_pda_bump_seed,
-            }));
+            },
+        ));
 
         let accounts = vec![
             AccountMeta::new(*rent_payer, true),
@@ -245,7 +246,9 @@ impl RemoveAdminAccountAdmin {
             .admin_config
             .admin_accounts
             .iter()
-            .filter(|account| **account != Pubkey::default() && **account != self.to_remove_admin_account)
+            .filter(|account| {
+                **account != Pubkey::default() && **account != self.to_remove_admin_account
+            })
             .copied()
             .collect::<Vec<Pubkey>>();
 

@@ -161,7 +161,10 @@ fn remove_admin_account_instruction(
         .collect::<Vec<Pubkey>>();
 
     if !admin_accounts.contains(&to_remove_admin_account) {
-        bail!("account {} isn't in the admin list", &to_remove_admin_account);
+        bail!(
+            "account {} isn't in the admin list",
+            &to_remove_admin_account
+        );
     }
     if admin_accounts.len() == 1 {
         bail!("must have at least 1 admin account, add a new admin account before remove the current one");

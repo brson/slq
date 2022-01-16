@@ -147,5 +147,33 @@ fn remove_admin_account_instruction(
     rent_payer: &Pubkey,
     cmd: RemoveAdminAccountAdminCommand,
 ) -> Result<Instruction> {
-    todo!()
+    let (instance_pubkey, _) = make_instance_pda(program_id, &cmd.instance_name);
+    let instance_account = client.get_account(&instance_pubkey)?;
+    let slq_instance = SlqInstance::try_from_slice(&instance_account.data)?;
+
+    let to_remove_admin_account = Pubkey::from_str(&cmd.account)?;
+    let mut admin_accounts = slq_instance
+        .admin_config
+        .admin_accounts
+        .iter()
+        .filter(|account| **account != Pubkey::default())
+        .copied()
+        .collect::<Vec<Pubkey>>();
+
+    if !admin_accounts.contains(&to_remove_admin_account) {
+        bail!("account {} isn't in the admin list", &to_remove_admin_account);
+    }
+    if admin_accounts.len() == 1 {
+        bail!("must have at least 1 admin account, add a new admin account before remove the current one");
+    }
+    if admin_accounts.len() == usize::from(slq_instance.admin_config.approval_threshold) {
+        bail!("approval threshold is the same as the number of admin accounts, change the approval threshold before remove an account");
+    }
+
+    RemoveAdminAccountAdmin::build_instruction(
+        program_id,
+        rent_payer,
+        cmd.instance_name,
+        to_remove_admin_account,
+    )
 }

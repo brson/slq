@@ -60,8 +60,6 @@ impl ChangeApprovalThresholdAdmin {
         instance_name: String,
         approval_threshold: u8,
     ) -> Result<Instruction> {
-        // todo varification
-
         let (instance_pda, instance_pda_bump_seed) = make_instance_pda(program_id, &instance_name);
 
         let instr = SlqInstruction::Admin(SlqAdminInstruction::ChangeApprovalThreshold(

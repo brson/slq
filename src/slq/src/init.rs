@@ -207,7 +207,7 @@ pub fn verify_pda(
     assert_eq!(pda_bump_seed, expected_pda_bump_seed);
 }
 
-fn create_admin_accounts_array(accounts: &[Pubkey]) -> [Pubkey; MAX_ADMIN_ACCOUNTS] {
+pub fn create_admin_accounts_array(accounts: &[Pubkey]) -> [Pubkey; MAX_ADMIN_ACCOUNTS] {
     let mut array = [Pubkey::default(); MAX_ADMIN_ACCOUNTS];
     assert!(accounts.len() <= array.len());
     for (i, account) in accounts.iter().enumerate() {

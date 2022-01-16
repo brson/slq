@@ -127,7 +127,7 @@ fn add_admin_account_instruction(
         bail!("there are already {} admin accounts, remove one to add a new account", MAX_ADMIN_ACCOUNTS);
     }
     if admin_accounts.contains(&new_admin_account) {
-        bail!("account {} is already in the current admin list", &new_admin_account);
+        bail!("account {} already exists", &new_admin_account);
     }
 
     AddAdminAccountAdmin::build_instruction(

@@ -17,7 +17,7 @@ use solana_program::{
 };
 use std::convert::{TryFrom, TryInto};
 
-use crate::init::{make_instance_pda, verify_pda};
+use crate::init::{make_instance_pda, verify_pda, create_admin_accounts_array};
 use crate::state::AdminConfig;
 use crate::state::SlqInstance;
 use crate::state::MAX_ADMIN_ACCOUNTS;
@@ -143,7 +143,43 @@ impl AddAdminAccountAdmin {
     }
 
     fn exec(&self, program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
-        todo!()
+        let accounts_iter = &mut accounts.iter();
+
+        let rent_payer = next_account_info(accounts_iter)?;
+        let instance_pda = next_account_info(accounts_iter)?;
+
+        {
+            assert!(rent_payer.is_writable);
+            assert!(rent_payer.is_signer);
+            assert!(instance_pda.is_writable);
+            assert_eq!(instance_pda.owner, program_id, "unexpected program id");
+
+            verify_pda(
+                program_id,
+                &self.instance_name,
+                instance_pda.key,
+                self.instance_pda_bump_seed,
+                make_instance_pda,
+            );
+        }
+
+        let mut instance = SlqInstance::try_from_slice(&instance_pda.data.borrow_mut())?;
+
+        let mut admin_accounts = instance
+            .admin_config
+            .admin_accounts
+            .iter()
+            .filter(|account| **account != Pubkey::default())
+            .copied()
+            .collect::<Vec<Pubkey>>();
+
+        admin_accounts.push(self.new_admin_account);
+
+        instance.admin_config.admin_accounts = create_admin_accounts_array(&admin_accounts); 
+        
+        instance.serialize(&mut *instance_pda.data.borrow_mut())?;
+
+        Ok(())
     }
 }
 

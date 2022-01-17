@@ -1,7 +1,5 @@
 #![allow(unused)]
 
-use admin::AdminCommand;
-use vault::VaultCommand;
 use anyhow::{anyhow, bail, Context, Result};
 use borsh::de::BorshDeserialize;
 use init::InitializeInstanceCommand;
@@ -19,8 +17,13 @@ use std::convert::TryInto;
 use std::str::FromStr;
 use structopt::StructOpt;
 
+use admin::AdminCommand;
+use vault::VaultCommand;
+use multisig::MultisigCommand;
+
 mod admin;
 mod init;
+mod multisig;
 mod vault;
 
 fn main() -> Result<()> {
@@ -52,6 +55,12 @@ fn main() -> Result<()> {
             cmd,
         )?,
         Command::Admin(cmd) => admin::do_command(
+            &client,
+            &program_keypair.pubkey(),
+            &config.keypair.pubkey(),
+            cmd,
+        )?,
+        Command::Multisig(cmd) => multisig::do_command(
             &client,
             &program_keypair.pubkey(),
             &config.keypair.pubkey(),
@@ -90,6 +99,7 @@ enum Command {
     InitializeInstance(InitializeInstanceCommand),
     GetInstanceState { instance_name: String },
     Admin(AdminCommand),
+    Multisig(MultisigCommand),
     Vault(VaultCommand),
 }
 

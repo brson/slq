@@ -35,22 +35,22 @@ pub(crate) fn do_command(
 ) -> Result<Instruction> {
     let vault_name = "vault".to_string();
     match cmd {
-        VaultCommand::CreateVault => slq::vault::CreateVault::build_instruction(
-            program_id,
-            rent_payer,
-            &vault_name,
-        ),
+        VaultCommand::CreateVault => {
+            slq::vault::CreateVault::build_instruction(program_id, rent_payer, &vault_name)
+        }
         VaultCommand::DepositToVault { amount } => slq::vault::DepositToVault::build_instruction(
             program_id,
             rent_payer,
             &vault_name,
             amount,
         ),
-        VaultCommand::WithdrawFromVault { amount } => slq::vault::WithdrawFromVault::build_instruction(
-            program_id,
-            rent_payer,
-            &vault_name,
-            amount,
-        ),
+        VaultCommand::WithdrawFromVault { amount } => {
+            slq::vault::WithdrawFromVault::build_instruction(
+                program_id,
+                rent_payer,
+                &vault_name,
+                amount,
+            )
+        }
     }
 }

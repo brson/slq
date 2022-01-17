@@ -18,8 +18,8 @@ use std::str::FromStr;
 use structopt::StructOpt;
 
 use admin::AdminCommand;
-use vault::VaultCommand;
 use multisig::MultisigCommand;
+use vault::VaultCommand;
 
 mod admin;
 mod init;
@@ -70,7 +70,7 @@ fn main() -> Result<()> {
             &client,
             &program_keypair.pubkey(),
             &config.keypair.pubkey(),
-            cmd
+            cmd,
         )?,
     };
 

@@ -10,9 +10,9 @@ use solana_sdk::signature::{read_keypair_file, Keypair, Signer};
 use solana_sdk::transaction::Transaction;
 use std::convert::TryFrom;
 use std::convert::TryInto;
+use std::path::PathBuf;
 use std::str::FromStr;
 use structopt::StructOpt;
-use std::path::PathBuf;
 
 use borsh::BorshDeserialize;
 use slq::init;
@@ -57,9 +57,9 @@ pub struct Init {
     /// There can be multiple multisig instances per multisig program.
     multisig_name: String,
     approval_threshold: u8,
-    admin_accounts: Vec<String>
+    admin_accounts: Vec<String>,
 }
-    
+
 #[derive(StructOpt, Debug)]
 pub struct StartTransaction {
     multisig_name: String,

@@ -37,15 +37,9 @@ fn process_instruction(
     let instr = SlqInstruction::deserialize(&mut instruction_data)?;
 
     match instr {
-        SlqInstruction::InitializeInstance(instr) => {
-            init::exec(program_id, accounts, instr)
-        }
-        SlqInstruction::Admin(instr) => {
-            admin::exec(program_id, accounts, instr)
-        }
-        SlqInstruction::Vault(instr) => {
-            vault::exec(program_id, accounts, instr)
-        }
+        SlqInstruction::InitializeInstance(instr) => init::exec(program_id, accounts, instr),
+        SlqInstruction::Admin(instr) => admin::exec(program_id, accounts, instr),
+        SlqInstruction::Vault(instr) => vault::exec(program_id, accounts, instr),
     }
 }
 
@@ -55,4 +49,3 @@ pub enum SlqInstruction {
     Admin(admin::SlqAdminInstruction),
     Vault(vault::SlqVaultInstruction),
 }
-

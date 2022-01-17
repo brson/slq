@@ -29,15 +29,9 @@ pub fn exec(
     instr: SlqVaultInstruction,
 ) -> ProgramResult {
     match instr {
-        SlqVaultInstruction::CreateVault(instr) => {
-            instr.exec(program_id, accounts)
-        }
-        SlqVaultInstruction::DepositToVault(instr) => {
-            instr.exec(program_id, accounts)
-        }
-        SlqVaultInstruction::WithdrawFromVault(instr) => {
-            instr.exec(program_id, accounts)
-        }
+        SlqVaultInstruction::CreateVault(instr) => instr.exec(program_id, accounts),
+        SlqVaultInstruction::DepositToVault(instr) => instr.exec(program_id, accounts),
+        SlqVaultInstruction::WithdrawFromVault(instr) => instr.exec(program_id, accounts),
     }
 }
 
@@ -91,14 +85,11 @@ impl CreateVault {
     ) -> Result<Instruction> {
         let (vault_pubkey, vault_bump_seed) = vault_pda(program_id, payer, vault_name);
 
-        let slq_instruction = SlqInstruction::Vault(
-            SlqVaultInstruction::CreateVault(
-                CreateVault {
-                    vault_name: vault_name.to_string(),
-                    vault_bump_seed,
-                }
-            )
-        );
+        let slq_instruction =
+            SlqInstruction::Vault(SlqVaultInstruction::CreateVault(CreateVault {
+                vault_name: vault_name.to_string(),
+                vault_bump_seed,
+            }));
         //        let mut slq_data: Vec<u8> = Vec::new();
         //        slq_instruction.serialize(&mut slq_data)
         //            .map_err(|_| anyhow!("unable to serialize instruction"))?;
@@ -116,11 +107,7 @@ impl CreateVault {
         ))
     }
 
-    fn exec(
-        &self,
-        program_id: &Pubkey,
-        accounts: &[AccountInfo],
-    ) -> ProgramResult {
+    fn exec(&self, program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
         let accounts_iter = &mut accounts.iter();
         let payer = next_account_info(accounts_iter)?;
         let vault = next_account_info(accounts_iter)?;
@@ -159,15 +146,12 @@ impl DepositToVault {
     ) -> Result<Instruction> {
         let (vault_pubkey, vault_bump_seed) = vault_pda(program_id, payer, vault_name);
 
-        let slq_instruction = SlqInstruction::Vault(
-            SlqVaultInstruction::DepositToVault(
-                DepositToVault {
-                    vault_name: vault_name.to_string(),
-                    vault_bump_seed,
-                    amount,
-                }
-            )
-        );
+        let slq_instruction =
+            SlqInstruction::Vault(SlqVaultInstruction::DepositToVault(DepositToVault {
+                vault_name: vault_name.to_string(),
+                vault_bump_seed,
+                amount,
+            }));
 
         let accounts = vec![
             AccountMeta::new(*payer, true),
@@ -182,11 +166,7 @@ impl DepositToVault {
         ))
     }
 
-    fn exec(
-        &self,
-        program_id: &Pubkey,
-        accounts: &[AccountInfo],
-    ) -> ProgramResult {
+    fn exec(&self, program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
         let accounts_iter = &mut accounts.iter();
         let payer = next_account_info(accounts_iter)?;
         let vault = next_account_info(accounts_iter)?;
@@ -217,15 +197,12 @@ impl WithdrawFromVault {
     ) -> Result<Instruction> {
         let (vault_pubkey, vault_bump_seed) = vault_pda(program_id, payer, vault_name);
 
-        let slq_instruction = SlqInstruction::Vault(
-            SlqVaultInstruction::WithdrawFromVault(
-                WithdrawFromVault {
-                    vault_name: vault_name.to_string(),
-                    vault_bump_seed,
-                    amount,
-                }
-            )
-        );
+        let slq_instruction =
+            SlqInstruction::Vault(SlqVaultInstruction::WithdrawFromVault(WithdrawFromVault {
+                vault_name: vault_name.to_string(),
+                vault_bump_seed,
+                amount,
+            }));
 
         let accounts = vec![
             AccountMeta::new(*payer, true),
@@ -240,11 +217,7 @@ impl WithdrawFromVault {
         ))
     }
 
-    fn exec<'accounts>(
-        &self,
-        program_id: &Pubkey,
-        accounts: &[AccountInfo],
-    ) -> ProgramResult {
+    fn exec<'accounts>(&self, program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
         let accounts_iter = &mut accounts.iter();
         let payer = next_account_info(accounts_iter)?;
         let vault = next_account_info(accounts_iter)?;

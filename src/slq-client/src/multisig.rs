@@ -55,14 +55,14 @@ pub struct Init {
     /// The name of the multisig instance.
     ///
     /// There can be multiple multisig instances per multisig program.
-    multisig_name: String,
+    instance_name: String,
     approval_threshold: u8,
     admin_accounts: Vec<String>,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct StartTransaction {
-    multisig_name: String,
+    instance_name: String,
     /// Used to identify the nonce account.
     transaction_name: String,
     transaction_path: PathBuf,
@@ -85,7 +85,7 @@ pub struct CancelTransaction {
 
 #[derive(StructOpt, Debug)]
 pub struct StartDestroy {
-    multisig_name: String,
+    instance_name: String,
 }
 
 pub(crate) fn do_command(

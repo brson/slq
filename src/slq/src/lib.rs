@@ -16,6 +16,7 @@ use std::convert::{TryFrom, TryInto};
 
 pub mod admin;
 pub mod init;
+pub mod multisig;
 pub mod state;
 pub mod vault;
 
@@ -39,6 +40,7 @@ fn process_instruction(
     match instr {
         SlqInstruction::InitializeInstance(instr) => init::exec(program_id, accounts, instr),
         SlqInstruction::Admin(instr) => admin::exec(program_id, accounts, instr),
+        SlqInstruction::Multisig(instr) => multisig::exec(program_id, accounts, instr),
         SlqInstruction::Vault(instr) => vault::exec(program_id, accounts, instr),
     }
 }
@@ -47,5 +49,6 @@ fn process_instruction(
 pub enum SlqInstruction {
     InitializeInstance(init::SlqInitializeInstanceInstruction),
     Admin(admin::SlqAdminInstruction),
+    Multisig(multisig::SlqMultisigInstruction),
     Vault(vault::SlqVaultInstruction),
 }

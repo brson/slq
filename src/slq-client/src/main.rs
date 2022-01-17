@@ -1,6 +1,7 @@
 #![allow(unused)]
 
 use admin::AdminCommand;
+use vault::VaultCommand;
 use anyhow::{anyhow, bail, Context, Result};
 use borsh::de::BorshDeserialize;
 use init::InitializeInstanceCommand;
@@ -20,6 +21,7 @@ use structopt::StructOpt;
 
 mod admin;
 mod init;
+mod vault;
 
 fn main() -> Result<()> {
     env_logger::init();
@@ -29,7 +31,6 @@ fn main() -> Result<()> {
     let version = client.get_version()?;
 
     let program_keypair = get_program_keypair(&client)?;
-    let vault_name = "vault".to_string();
 
     let opt = Opt::from_args();
 
@@ -56,22 +57,11 @@ fn main() -> Result<()> {
             &config.keypair.pubkey(),
             cmd,
         )?,
-        Command::CreateVault => slq::CreateVault::build_instruction(
+        Command::Vault(cmd) => vault::do_command(
+            &client,
             &program_keypair.pubkey(),
             &config.keypair.pubkey(),
-            &vault_name,
-        )?,
-        Command::DepositToVault { amount } => slq::DepositToVault::build_instruction(
-            &program_keypair.pubkey(),
-            &config.keypair.pubkey(),
-            &vault_name,
-            amount,
-        )?,
-        Command::WithdrawFromVault { amount } => slq::WithdrawFromVault::build_instruction(
-            &program_keypair.pubkey(),
-            &config.keypair.pubkey(),
-            &vault_name,
-            amount,
+            cmd
         )?,
     };
 
@@ -100,9 +90,7 @@ enum Command {
     InitializeInstance(InitializeInstanceCommand),
     GetInstanceState { instance_name: String },
     Admin(AdminCommand),
-    CreateVault,
-    DepositToVault { amount: u64 },
-    WithdrawFromVault { amount: u64 }, // todo: withdraw-all command
+    Vault(VaultCommand),
 }
 
 pub struct Config {

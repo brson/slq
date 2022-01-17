@@ -15,8 +15,6 @@ use std::str::FromStr;
 use structopt::StructOpt;
 
 use borsh::BorshDeserialize;
-use slq::init;
-use slq::init::make_instance_pda;
 use slq::state::{AdminConfig, SlqInstance, MAX_ADMIN_ACCOUNTS};
 
 #[derive(StructOpt, Debug)]
@@ -57,7 +55,7 @@ pub struct Init {
     /// There can be multiple multisig instances per multisig program.
     instance_name: String,
     approval_threshold: u8,
-    admin_accounts: Vec<String>,
+    owners: Vec<String>,
 }
 
 #[derive(StructOpt, Debug)]
@@ -94,5 +92,31 @@ pub(crate) fn do_command(
     rent_payer: &Pubkey,
     cmd: MultisigCommand,
 ) -> Result<Instruction> {
-    todo!()
+    match cmd {
+        MultisigCommand::Init(cmd) => cmd.exec(client, program_id, rent_payer),
+        _ => panic!(),
+    }
+}
+
+impl Init {
+    fn exec(
+        &self,
+        client: &RpcClient,
+        program_id: &Pubkey,
+        rent_payer: &Pubkey,
+    ) -> Result<Instruction> {
+        let owners = self
+            .owners
+            .iter()
+            .map(|owner| Pubkey::from_str(owner))
+            .collect::<Result<Vec<Pubkey>, _>>()?;
+
+        slq::multisig::Init::build_instruction(
+            program_id,
+            rent_payer,
+            self.instance_name.clone(),
+            self.approval_threshold,
+            owners,
+        )
+    }
 }

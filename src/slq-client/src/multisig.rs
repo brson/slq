@@ -11,6 +11,8 @@ use solana_sdk::signature::{read_keypair_file, Keypair, Signer};
 use solana_sdk::system_instruction;
 use solana_sdk::transaction::Transaction;
 use solana_sdk::signers::Signers;
+use solana_sdk::sysvar::instructions::construct_instructions_data;
+use solana_sdk::message::SanitizedMessage;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::path::Path;
@@ -150,23 +152,27 @@ impl StartTransaction {
         let nonce_account = Keypair::new();
 
         let tx = load_tx(&self.transaction_path)?;
-        println!("load_tx {:#?}", tx);
+//        println!("load_tx {:#?}", tx);
 
         let mut signatures = tx.signatures;
         let mut user_instr_list = vec![];
 
-        for i in tx.message.instructions {
+        let num = tx.message.instructions.len();
+        let msg = SanitizedMessage::try_from(tx.message)?;
+        let msg_data = construct_instructions_data(&msg);
+        
+        for i in 0..num {
             let decompiled_instr =
-                Message::deserialize_instruction(i.program_id_index.into(), &i.data)?;
+                Message::deserialize_instruction(i, &msg_data)?;
             user_instr_list.push(decompiled_instr);
         }
-
         let mut new_instr_list = vec![system_instruction::advance_nonce_account(
             &nonce_account.pubkey(),
             rent_payer,
         )];
 
         new_instr_list.append(&mut user_instr_list);
+        println!("new_instr_list: {:#?}", new_instr_list);
 
         // todo: get rent lamports for creating nonce_account
         let lamports = 1024;
@@ -187,7 +193,7 @@ impl StartTransaction {
         let mut new_tx = Transaction::new_unsigned(message);
 
         // todo: create_nonce_account on chain and get the nonce for `recent_blockhash`
-        let hash = client.get_recent_blockhash()?.0;
+        let hash = client.get_latest_blockhash()?;
 
         // todo: sign with rent_payer's keypair
         let signers: Vec<&dyn Signer> = vec![&nonce_account];
@@ -227,7 +233,7 @@ impl DemoTransaction {
         let instr = slq::admin::ChangeApprovalThresholdAdmin::build_instruction(
             program_id,
             rent_payer,
-            "bar1".to_string(),
+            "pookie1".to_string(),
             1,
         )?;
 

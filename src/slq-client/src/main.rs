@@ -74,7 +74,7 @@ fn main() -> Result<()> {
         )?,
     };
 
-    let blockhash = client.get_recent_blockhash()?.0;
+    let blockhash = client.get_latest_blockhash()?;
     let tx = Transaction::new_signed_with_payer(
         &[instr],
         Some(&config.keypair.pubkey()),

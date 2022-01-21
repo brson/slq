@@ -136,7 +136,7 @@ impl Init {
             ),
             &[rent_payer.clone(), instance_pda.clone()],
             &[&[
-                b"instance",
+                b"multisig-instance",
                 self.instance_name.as_ref(),
                 &[self.instance_pda_bump_seed],
             ]],
@@ -187,7 +187,7 @@ impl Init {
 }
 
 pub fn make_instance_pda(program_id: &Pubkey, instance_name: &str) -> (Pubkey, u8) {
-    let seeds = &[b"instance", instance_name.as_bytes()];
+    let seeds = &[b"multisig-instance", instance_name.as_bytes()];
     Pubkey::find_program_address(seeds, program_id)
 }
 

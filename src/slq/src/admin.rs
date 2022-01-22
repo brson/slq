@@ -141,7 +141,7 @@ impl AddAdminAccountAdmin {
 
         Ok(Instruction::new_with_borsh(*program_id, &instr, accounts))
     }
-    
+
     fn exec(&self, program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
         let accounts_iter = &mut accounts.iter();
 

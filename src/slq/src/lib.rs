@@ -52,4 +52,3 @@ pub enum SlqInstruction {
     Multisig(multisig::SlqMultisigInstruction),
     Vault(vault::SlqVaultInstruction),
 }
-

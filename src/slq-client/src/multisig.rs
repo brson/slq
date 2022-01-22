@@ -4,16 +4,16 @@ use anyhow::{anyhow, bail, Context, Result};
 use log::info;
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::commitment_config::CommitmentConfig;
+use solana_sdk::hash::Hash;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::message::Message;
+use solana_sdk::message::SanitizedMessage;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{read_keypair_file, Keypair, Signer};
-use solana_sdk::system_instruction;
-use solana_sdk::transaction::Transaction;
 use solana_sdk::signers::Signers;
+use solana_sdk::system_instruction;
 use solana_sdk::sysvar::instructions::construct_instructions_data;
-use solana_sdk::message::SanitizedMessage;
-use solana_sdk::hash::Hash;
+use solana_sdk::transaction::Transaction;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::path::Path;
@@ -22,8 +22,8 @@ use std::str::FromStr;
 use structopt::StructOpt;
 
 use borsh::BorshDeserialize;
-use solana_sdk::borsh::get_instance_packed_len;
 use slq::state::{AdminConfig, SlqInstance, MAX_ADMIN_ACCOUNTS};
+use solana_sdk::borsh::get_instance_packed_len;
 
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -151,7 +151,7 @@ impl StartTransaction {
     ) -> Result<()> {
         let nonce_account = Keypair::new();
         println!("nonce_account_pubkey: {:#?}", nonce_account.pubkey());
-        
+
         let tx = load_tx(&self.transaction_path)?;
 
         let mut signatures = tx.signatures;
@@ -160,14 +160,13 @@ impl StartTransaction {
         let instr_num = tx.message.instructions.len();
         let msg = SanitizedMessage::try_from(tx.message)?;
         let msg = construct_instructions_data(&msg);
-        
+
         for i in 0..instr_num {
-            let decompiled_instr =
-                Message::deserialize_instruction(i, &msg)?;
+            let decompiled_instr = Message::deserialize_instruction(i, &msg)?;
             user_instr_list.push(decompiled_instr);
         }
 
-//        println!("user_instr: {:#?}", user_instr_list);
+        //        println!("user_instr: {:#?}", user_instr_list);
         let mut new_instr_list = vec![system_instruction::advance_nonce_account(
             &nonce_account.pubkey(),
             &rent_payer.pubkey(),
@@ -196,37 +195,32 @@ impl StartTransaction {
             &rent_payer.pubkey(),
             lamports,
         );
-        let mut onchain_tx = Transaction::new_with_payer(
-            &onchain_instr,
-            Some(&rent_payer.pubkey()),
-        );
-        
+        let mut onchain_tx =
+            Transaction::new_with_payer(&onchain_instr, Some(&rent_payer.pubkey()));
+
         onchain_tx.try_sign(&signers, client.get_latest_blockhash()?)?;
 
-//        println!("onchain_tx {:#?}", onchain_tx);
-        
+        //        println!("onchain_tx {:#?}", onchain_tx);
+
         let sig = client.send_and_confirm_transaction(&onchain_tx)?;
 
         println!("hello, sig {:#?}", sig);
 
         // build off-chain tx
-        let mut new_tx = Transaction::new_with_payer(
-            &new_instr_list,
-            Some(&rent_payer.pubkey()),
-        );
+        let mut new_tx = Transaction::new_with_payer(&new_instr_list, Some(&rent_payer.pubkey()));
         println!("new_tx {:#?}", new_tx);
-        
+
         let onchain_nonce_account = client.get_account(&nonce_account.pubkey())?;
         println!("get_account: {:#?}", onchain_nonce_account);
-        
-//        let hash = Hash::new(&onchain_nonce_account.data);
+
+        //        let hash = Hash::new(&onchain_nonce_account.data);
         let hash: Hash = onchain_nonce_account.deserialize_data()?;
         println!("hash: {:?}", hash);
         println!("blockhash: {:#?}", client.get_latest_blockhash()?);
 
         let signers: Vec<&dyn Signer> = vec![&nonce_account, rent_payer];
         println!("signers: {:#?}", signers);
-        new_tx.try_sign(&signers, hash)?; 
+        new_tx.try_sign(&signers, hash)?;
 
         println!("new_tx_signed {:#?}", new_tx);
         write_tx_to_file(&self.transaction_path, &new_tx)?;
@@ -238,12 +232,7 @@ impl StartTransaction {
 }
 
 impl DemoTransaction {
-    pub fn exec(
-        &self,
-        client: &RpcClient,
-        program_id: &Pubkey,
-        rent_payer: &Pubkey,
-    ) -> Result<()> {
+    pub fn exec(&self, client: &RpcClient, program_id: &Pubkey, rent_payer: &Pubkey) -> Result<()> {
         let instr = slq::admin::ChangeApprovalThresholdAdmin::build_instruction(
             program_id,
             rent_payer,

@@ -151,66 +151,66 @@ impl StartTransaction {
         rent_payer: &Keypair,
     ) -> Result<()> {
         let nonce_account = Keypair::new();
+        let nonce_account_pubkey = nonce_account.pubkey();
+        let rent_payer_pubkey = rent_payer.pubkey();
 
+        // load and decompile offchain tx file
         let tx = load_tx(&self.transaction_path)?;
 
-        let mut user_instr_list = vec![];
+        let mut instr_offchain = vec![];
 
         let instr_num = tx.message.instructions.len();
-        let msg = SanitizedMessage::try_from(tx.message)?;
-        let msg = construct_instructions_data(&msg);
+        let message = SanitizedMessage::try_from(tx.message)?;
+        let message = construct_instructions_data(&message);
 
         for i in 0..instr_num {
-            let decompiled_instr = Message::deserialize_instruction(i, &msg)?;
-            user_instr_list.push(decompiled_instr);
+            let decompiled_instr = Message::deserialize_instruction(i, &message)?;
+            instr_offchain.push(decompiled_instr);
         }
 
-        let mut new_instr_list = vec![];
-        new_instr_list.append(&mut user_instr_list);
-
-        let lamports = client.get_minimum_balance_for_rent_exemption(State::size())?;
-
-        new_instr_list.push(system_instruction::withdraw_nonce_account(
-            &nonce_account.pubkey(),
-            &rent_payer.pubkey(),
-            &rent_payer.pubkey(),
-            lamports,
-        ));
+        // get rent for a nonce account
+        let nonce_rent = client.get_minimum_balance_for_rent_exemption(State::size())?;
 
         // build on-chain tx
-        let onchain_instr = system_instruction::create_nonce_account(
-            &rent_payer.pubkey(),
-            &nonce_account.pubkey(),
-            &rent_payer.pubkey(),
-            lamports,
+        let instr_onchain = system_instruction::create_nonce_account(
+            &rent_payer_pubkey,
+            &nonce_account_pubkey,
+            &rent_payer_pubkey,
+            nonce_rent,
         );
-        let mut onchain_tx =
-            Transaction::new_with_payer(&onchain_instr, Some(&rent_payer.pubkey()));
+        let mut tx_onchain = Transaction::new_with_payer(&instr_onchain, Some(&rent_payer_pubkey));
 
         let signers: Vec<&dyn Signer> = vec![&nonce_account, rent_payer];
-        onchain_tx.try_sign(&signers, client.get_latest_blockhash()?)?;
+        tx_onchain.try_sign(&signers, client.get_latest_blockhash()?)?;
 
-        client.send_and_confirm_transaction(&onchain_tx)?;
+        client.send_and_confirm_transaction(&tx_onchain)?;
 
         // build off-chain tx
+        instr_offchain.push(system_instruction::withdraw_nonce_account(
+            &nonce_account_pubkey,
+            &rent_payer_pubkey,
+            &rent_payer_pubkey,
+            nonce_rent,
+        ));
+
         let message = Message::new_with_nonce(
-            new_instr_list,
-            Some(&rent_payer.pubkey()),
-            &nonce_account.pubkey(),
-            &rent_payer.pubkey(),
+            instr_offchain,
+            Some(&rent_payer_pubkey),
+            &nonce_account_pubkey,
+            &rent_payer_pubkey,
         );
 
-        let mut new_tx = Transaction::new_unsigned(message);
+        let mut tx_offchain = Transaction::new_unsigned(message);
 
-        let onchain_nonce_account = client.get_account(&nonce_account.pubkey())?;
-        let hash: Hash = onchain_nonce_account.deserialize_data()?;
+        let onchain_nonce_account = client.get_account(&nonce_account_pubkey)?;
+        let nonce_hash: Hash = onchain_nonce_account.deserialize_data()?;
 
         let signers: Vec<&dyn Signer> = vec![rent_payer];
-        new_tx.try_partial_sign(&signers, hash)?;
+        tx_offchain.try_partial_sign(&signers, nonce_hash)?;
 
-        let path = format!("{}-slq-tx", self.transaction_path.to_str().unwrap());
+        let path = format!("{}-slq-tx", self.transaction_path.to_str().unwrap_or(""));
 
-        write_tx_to_file(&PathBuf::from(&path), &new_tx)?;
+        write_tx_to_file(&PathBuf::from(&path), &tx_offchain)?;
         println!("the updated transaction is saved to file {}", path);
 
         Ok(())

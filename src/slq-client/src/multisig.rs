@@ -8,6 +8,7 @@ use solana_sdk::hash::Hash;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::message::Message;
 use solana_sdk::message::SanitizedMessage;
+use solana_sdk::nonce::State;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{read_keypair_file, Keypair, Signer};
 use solana_sdk::signers::Signers;
@@ -150,11 +151,9 @@ impl StartTransaction {
         rent_payer: &Keypair,
     ) -> Result<()> {
         let nonce_account = Keypair::new();
-        println!("nonce_account_pubkey: {:#?}", nonce_account.pubkey());
 
         let tx = load_tx(&self.transaction_path)?;
 
-        let mut signatures = tx.signatures;
         let mut user_instr_list = vec![];
 
         let instr_num = tx.message.instructions.len();
@@ -166,18 +165,10 @@ impl StartTransaction {
             user_instr_list.push(decompiled_instr);
         }
 
-        //        println!("user_instr: {:#?}", user_instr_list);
-        let mut new_instr_list = vec![system_instruction::advance_nonce_account(
-            &nonce_account.pubkey(),
-            &rent_payer.pubkey(),
-        )];
-
+        let mut new_instr_list = vec![];
         new_instr_list.append(&mut user_instr_list);
 
-        // todo: lamports caculation isn't correct
-        let account_size = get_instance_packed_len(&nonce_account.pubkey())?;
-        let lamports = client.get_minimum_balance_for_rent_exemption(account_size)?;
-        let lamports = 1447680;
+        let lamports = client.get_minimum_balance_for_rent_exemption(State::size())?;
 
         new_instr_list.push(system_instruction::withdraw_nonce_account(
             &nonce_account.pubkey(),
@@ -185,8 +176,6 @@ impl StartTransaction {
             &rent_payer.pubkey(),
             lamports,
         ));
-
-        let signers: Vec<&dyn Signer> = vec![&nonce_account, rent_payer];
 
         // build on-chain tx
         let onchain_instr = system_instruction::create_nonce_account(
@@ -198,34 +187,31 @@ impl StartTransaction {
         let mut onchain_tx =
             Transaction::new_with_payer(&onchain_instr, Some(&rent_payer.pubkey()));
 
+        let signers: Vec<&dyn Signer> = vec![&nonce_account, rent_payer];
         onchain_tx.try_sign(&signers, client.get_latest_blockhash()?)?;
 
-        //        println!("onchain_tx {:#?}", onchain_tx);
-
-        let sig = client.send_and_confirm_transaction(&onchain_tx)?;
-
-        println!("hello, sig {:#?}", sig);
+        client.send_and_confirm_transaction(&onchain_tx)?;
 
         // build off-chain tx
-        let mut new_tx = Transaction::new_with_payer(&new_instr_list, Some(&rent_payer.pubkey()));
-        println!("new_tx {:#?}", new_tx);
+        let message = Message::new_with_nonce(
+            new_instr_list,
+            Some(&rent_payer.pubkey()),
+            &nonce_account.pubkey(),
+            &rent_payer.pubkey(),
+        );
+
+        let mut new_tx = Transaction::new_unsigned(message);
 
         let onchain_nonce_account = client.get_account(&nonce_account.pubkey())?;
-        println!("get_account: {:#?}", onchain_nonce_account);
-
-        //        let hash = Hash::new(&onchain_nonce_account.data);
         let hash: Hash = onchain_nonce_account.deserialize_data()?;
-        println!("hash: {:?}", hash);
-        println!("blockhash: {:#?}", client.get_latest_blockhash()?);
 
-        let signers: Vec<&dyn Signer> = vec![&nonce_account, rent_payer];
-        println!("signers: {:#?}", signers);
-        new_tx.try_sign(&signers, hash)?;
+        let signers: Vec<&dyn Signer> = vec![rent_payer];
+        new_tx.try_partial_sign(&signers, hash)?;
 
-        println!("new_tx_signed {:#?}", new_tx);
-        write_tx_to_file(&self.transaction_path, &new_tx)?;
+        let path = format!("{}-slq-tx", self.transaction_path.to_str().unwrap());
 
-        println!("hi");
+        write_tx_to_file(&PathBuf::from(&path), &new_tx)?;
+        println!("the updated transaction is saved to file {}", path);
 
         Ok(())
     }
@@ -248,14 +234,14 @@ impl DemoTransaction {
     }
 }
 
-fn write_tx_to_file<P: AsRef<Path>>(path: P, tx: &Transaction) -> Result<()> {
-    let file = File::create(path)?;
+fn write_tx_to_file(path: &PathBuf, tx: &Transaction) -> Result<()> {
+    let file = File::create(&path)?;
     let mut writer = BufWriter::new(file);
 
     serde_json::to_writer(&mut writer, tx).map_err(|e| anyhow!("{}", e))
 }
 
-fn load_tx<P: AsRef<Path>>(path: P) -> Result<Transaction> {
+fn load_tx(path: &PathBuf) -> Result<Transaction> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let tx = serde_json::from_reader(reader)?;

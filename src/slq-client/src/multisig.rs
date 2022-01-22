@@ -115,8 +115,6 @@ pub(crate) fn do_command(
 ) -> Result<Instruction> {
     match cmd {
         MultisigCommand::Init(cmd) => cmd.exec(client, program_id, &rent_payer.pubkey()),
-        MultisigCommand::StartTransaction(cmd) => cmd.exec(client, program_id, rent_payer),
-        MultisigCommand::DemoTransaction(cmd) => cmd.exec(client, program_id, &rent_payer.pubkey()),
         _ => panic!(),
     }
 }
@@ -145,14 +143,15 @@ impl Init {
 }
 
 impl StartTransaction {
-    fn exec(
+    pub fn exec(
         &self,
         client: &RpcClient,
         program_id: &Pubkey,
         rent_payer: &Keypair,
-    ) -> Result<Instruction> {
+    ) -> Result<()> {
         let nonce_account = Keypair::new();
-
+        println!("nonce_account_pubkey: {:#?}", nonce_account.pubkey());
+        
         let tx = load_tx(&self.transaction_path)?;
 
         let mut signatures = tx.signatures;
@@ -168,6 +167,7 @@ impl StartTransaction {
             user_instr_list.push(decompiled_instr);
         }
 
+//        println!("user_instr: {:#?}", user_instr_list);
         let mut new_instr_list = vec![system_instruction::advance_nonce_account(
             &nonce_account.pubkey(),
             &rent_payer.pubkey(),
@@ -175,9 +175,10 @@ impl StartTransaction {
 
         new_instr_list.append(&mut user_instr_list);
 
+        // todo: lamports caculation isn't correct
         let account_size = get_instance_packed_len(&nonce_account.pubkey())?;
-
         let lamports = client.get_minimum_balance_for_rent_exemption(account_size)?;
+        let lamports = 1447680;
 
         new_instr_list.push(system_instruction::withdraw_nonce_account(
             &nonce_account.pubkey(),
@@ -195,22 +196,18 @@ impl StartTransaction {
             &rent_payer.pubkey(),
             lamports,
         );
-
-        let onchain_message = Message::new_with_nonce(
-            onchain_instr,
-            Some(&rent_payer.pubkey()),
-            &nonce_account.pubkey(),
-            &rent_payer.pubkey(),
+        let mut onchain_tx = Transaction::new_with_payer(
+            &onchain_instr,
+            Some(&rent_payer.pubkey())
         );
-
-        let mut onchain_tx = Transaction::new_unsigned(onchain_message);
-
+        
         onchain_tx.try_sign(&signers, client.get_latest_blockhash()?)?;
 
-        println!("{:#?}", onchain_tx);
+//        println!("onchain_tx {:#?}", onchain_tx);
         
-        client.send_and_confirm_transaction(&onchain_tx)?;
+        let sig = client.send_and_confirm_transaction(&onchain_tx)?;
 
+        println!("hello, sig {:#?}", sig);
 
         // build off-chain tx
         let message = Message::new_with_nonce(
@@ -222,48 +219,46 @@ impl StartTransaction {
 
         let mut new_tx = Transaction::new_unsigned(message);
 
-        let onchain_nonce_account = solana_client::nonce_utils::get_account(client, &nonce_account.pubkey())?;
-        let hash = Hash::new(&onchain_nonce_account.data);
+        let onchain_nonce_account = client.get_account(&nonce_account.pubkey())?;
+        println!("get_account: {:#?}", onchain_nonce_account);
+        
+//        let hash = Hash::new(&onchain_nonce_account.data);
+        let hash: Hash = onchain_nonce_account.deserialize_data()?;
+        println!("hash: {:?}", hash);
+        println!("blockhash: {:#?}", client.get_latest_blockhash()?);
 
+        let signers: Vec<&dyn Signer> = vec![&nonce_account, rent_payer];
+        println!("signers: {:#?}", signers);
         new_tx.try_sign(&signers, hash)?; 
 
         println!("new_tx {:#?}", new_tx);
         write_tx_to_file(&self.transaction_path, &new_tx)?;
 
+        println!("hi");
 
-
-
-        // temporarily return `Instruction`
-        Ok(system_instruction::advance_nonce_account(
-            &nonce_account.pubkey(),
-            &rent_payer.pubkey(),
-        ))
+        Ok(())
     }
 }
 
 impl DemoTransaction {
-    fn exec(
+    pub fn exec(
         &self,
         client: &RpcClient,
         program_id: &Pubkey,
         rent_payer: &Pubkey,
-    ) -> Result<Instruction> {
-        let owners = vec![Pubkey::new_unique()];
-
+    ) -> Result<()> {
         let instr = slq::admin::ChangeApprovalThresholdAdmin::build_instruction(
             program_id,
             rent_payer,
-            "pookie1".to_string(),
+            "foo".to_string(),
             1,
         )?;
 
-        let return_copy_instr = instr.clone();
         let tx = Transaction::new_with_payer(&[instr], Some(rent_payer));
 
         write_tx_to_file(&self.transaction_path, &tx)?;
 
-        // temporarily return `Instruction`
-        Ok(return_copy_instr)
+        Ok(())
     }
 }
 

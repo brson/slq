@@ -60,12 +60,29 @@ fn main() -> Result<()> {
             &config.keypair.pubkey(),
             cmd,
         )?,
-        Command::Multisig(cmd) => multisig::do_command(
-            &client,
-            &program_keypair.pubkey(),
-            &config.keypair,
-            cmd,
-        )?,
+        Command::Multisig(cmd) => {
+            match cmd {
+                MultisigCommand::StartTransaction(cmd) => {
+                    cmd.exec(&client,
+                             &program_keypair.pubkey(),
+                             &config.keypair)?;
+                    return Ok(());
+                }
+                MultisigCommand::DemoTransaction(cmd) => {
+                    cmd.exec(&client,
+                             &program_keypair.pubkey(),
+                             &config.keypair.pubkey())?;
+                    return Ok(());
+                }
+                _ => multisig::do_command(
+                    &client,
+                    &program_keypair.pubkey(),
+                    &config.keypair,
+                    cmd,
+                )?
+            }
+            
+        }
         Command::Vault(cmd) => vault::do_command(
             &client,
             &program_keypair.pubkey(),

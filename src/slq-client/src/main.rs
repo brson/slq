@@ -63,7 +63,7 @@ fn main() -> Result<()> {
         Command::Multisig(cmd) => multisig::do_command(
             &client,
             &program_keypair.pubkey(),
-            &config.keypair.pubkey(),
+            &config.keypair,
             cmd,
         )?,
         Command::Vault(cmd) => vault::do_command(

@@ -13,6 +13,7 @@ use solana_sdk::transaction::Transaction;
 use solana_sdk::signers::Signers;
 use solana_sdk::sysvar::instructions::construct_instructions_data;
 use solana_sdk::message::SanitizedMessage;
+use solana_sdk::hash::Hash;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::path::Path;
@@ -21,6 +22,7 @@ use std::str::FromStr;
 use structopt::StructOpt;
 
 use borsh::BorshDeserialize;
+use solana_sdk::borsh::get_instance_packed_len;
 use slq::state::{AdminConfig, SlqInstance, MAX_ADMIN_ACCOUNTS};
 
 use serde::{Deserialize, Serialize};
@@ -108,13 +110,13 @@ pub struct DemoTransaction {
 pub(crate) fn do_command(
     client: &RpcClient,
     program_id: &Pubkey,
-    rent_payer: &Pubkey,
+    rent_payer: &Keypair,
     cmd: MultisigCommand,
 ) -> Result<Instruction> {
     match cmd {
-        MultisigCommand::Init(cmd) => cmd.exec(client, program_id, rent_payer),
+        MultisigCommand::Init(cmd) => cmd.exec(client, program_id, &rent_payer.pubkey()),
         MultisigCommand::StartTransaction(cmd) => cmd.exec(client, program_id, rent_payer),
-        MultisigCommand::DemoTransaction(cmd) => cmd.exec(client, program_id, rent_payer),
+        MultisigCommand::DemoTransaction(cmd) => cmd.exec(client, program_id, &rent_payer.pubkey()),
         _ => panic!(),
     }
 }
@@ -147,76 +149,94 @@ impl StartTransaction {
         &self,
         client: &RpcClient,
         program_id: &Pubkey,
-        rent_payer: &Pubkey,
+        rent_payer: &Keypair,
     ) -> Result<Instruction> {
         let nonce_account = Keypair::new();
 
         let tx = load_tx(&self.transaction_path)?;
-//        println!("load_tx {:#?}", tx);
 
         let mut signatures = tx.signatures;
         let mut user_instr_list = vec![];
 
-        let num = tx.message.instructions.len();
+        let instr_num = tx.message.instructions.len();
         let msg = SanitizedMessage::try_from(tx.message)?;
-        let msg_data = construct_instructions_data(&msg);
+        let msg = construct_instructions_data(&msg);
         
-        for i in 0..num {
+        for i in 0..instr_num {
             let decompiled_instr =
-                Message::deserialize_instruction(i, &msg_data)?;
+                Message::deserialize_instruction(i, &msg)?;
             user_instr_list.push(decompiled_instr);
         }
+
         let mut new_instr_list = vec![system_instruction::advance_nonce_account(
             &nonce_account.pubkey(),
-            rent_payer,
+            &rent_payer.pubkey(),
         )];
 
         new_instr_list.append(&mut user_instr_list);
-        println!("new_instr_list: {:#?}", new_instr_list);
 
-        // todo: get rent lamports for creating nonce_account
-        let lamports = 1024;
+        let account_size = get_instance_packed_len(&nonce_account.pubkey())?;
+
+        let lamports = client.get_minimum_balance_for_rent_exemption(account_size)?;
+
         new_instr_list.push(system_instruction::withdraw_nonce_account(
             &nonce_account.pubkey(),
-            rent_payer,
-            rent_payer,
+            &rent_payer.pubkey(),
+            &rent_payer.pubkey(),
             lamports,
         ));
 
+        let signers: Vec<&dyn Signer> = vec![&nonce_account, rent_payer];
+
+        // build on-chain tx
+        let onchain_instr = system_instruction::create_nonce_account(
+            &rent_payer.pubkey(),
+            &nonce_account.pubkey(),
+            &rent_payer.pubkey(),
+            lamports,
+        );
+
+        let onchain_message = Message::new_with_nonce(
+            onchain_instr,
+            Some(&rent_payer.pubkey()),
+            &nonce_account.pubkey(),
+            &rent_payer.pubkey(),
+        );
+
+        let mut onchain_tx = Transaction::new_unsigned(onchain_message);
+
+        onchain_tx.try_sign(&signers, client.get_latest_blockhash()?)?;
+
+        println!("{:#?}", onchain_tx);
+        
+        client.send_and_confirm_transaction(&onchain_tx)?;
+
+
+        // build off-chain tx
         let message = Message::new_with_nonce(
             new_instr_list,
-            Some(rent_payer),
+            Some(&rent_payer.pubkey()),
             &nonce_account.pubkey(),
-            rent_payer,
+            &rent_payer.pubkey(),
         );
 
         let mut new_tx = Transaction::new_unsigned(message);
 
-        // todo: create_nonce_account on chain and get the nonce for `recent_blockhash`
-        let hash = client.get_latest_blockhash()?;
+        let onchain_nonce_account = solana_client::nonce_utils::get_account(client, &nonce_account.pubkey())?;
+        let hash = Hash::new(&onchain_nonce_account.data);
 
-        // todo: sign with rent_payer's keypair
-        let signers: Vec<&dyn Signer> = vec![&nonce_account];
         new_tx.try_sign(&signers, hash)?; 
 
         println!("new_tx {:#?}", new_tx);
         write_tx_to_file(&self.transaction_path, &new_tx)?;
 
-        // for on-chain file
-        // set authority to rent_payer
 
-        // instruction for creating nonce-account
-        // rent_payer, singer, payer
-        // nonce_keypair, signer
-        // system_program
 
-        // submit to on-chain program for exec
-        // or call system_program directly
 
         // temporarily return `Instruction`
         Ok(system_instruction::advance_nonce_account(
             &nonce_account.pubkey(),
-            rent_payer,
+            &rent_payer.pubkey(),
         ))
     }
 }

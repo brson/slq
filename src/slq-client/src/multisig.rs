@@ -198,7 +198,7 @@ impl StartTransaction {
         );
         let mut onchain_tx = Transaction::new_with_payer(
             &onchain_instr,
-            Some(&rent_payer.pubkey())
+            Some(&rent_payer.pubkey()),
         );
         
         onchain_tx.try_sign(&signers, client.get_latest_blockhash()?)?;
@@ -210,15 +210,12 @@ impl StartTransaction {
         println!("hello, sig {:#?}", sig);
 
         // build off-chain tx
-        let message = Message::new_with_nonce(
-            new_instr_list,
+        let mut new_tx = Transaction::new_with_payer(
+            &new_instr_list,
             Some(&rent_payer.pubkey()),
-            &nonce_account.pubkey(),
-            &rent_payer.pubkey(),
         );
-
-        let mut new_tx = Transaction::new_unsigned(message);
-
+        println!("new_tx {:#?}", new_tx);
+        
         let onchain_nonce_account = client.get_account(&nonce_account.pubkey())?;
         println!("get_account: {:#?}", onchain_nonce_account);
         
@@ -231,7 +228,7 @@ impl StartTransaction {
         println!("signers: {:#?}", signers);
         new_tx.try_sign(&signers, hash)?; 
 
-        println!("new_tx {:#?}", new_tx);
+        println!("new_tx_signed {:#?}", new_tx);
         write_tx_to_file(&self.transaction_path, &new_tx)?;
 
         println!("hi");

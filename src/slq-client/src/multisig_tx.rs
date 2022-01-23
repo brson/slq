@@ -98,13 +98,14 @@ pub struct DemoTransaction {
 pub(crate) fn do_command(
     client: &RpcClient,
     program_id: &Pubkey,
-    rent_payer: &Keypair,
+    payer: &Keypair,
     cmd: MultisigTxCommand,
 ) -> Result<()> {
     match cmd {
-        MultisigTxCommand::StartTransaction(cmd) => cmd.exec(client, program_id, rent_payer),
+        MultisigTxCommand::StartTransaction(cmd) => cmd.exec(client, program_id, payer),
+        MultisigTxCommand::SignTransaction(cmd) => cmd.exec(program_id, payer),
         MultisigTxCommand::DemoTransaction(cmd) => {
-            cmd.exec(client, program_id, &rent_payer.pubkey())
+            cmd.exec(client, program_id, &payer.pubkey())
         }
         _ => todo!(),
     }
@@ -170,11 +171,32 @@ impl StartTransaction {
         let signers: Vec<&dyn Signer> = vec![rent_payer];
         tx_offchain.try_partial_sign(&signers, nonce_hash)?;
 
-        let path = format!("{}-slq-tx", self.transaction_path.to_str().unwrap_or(""));
+        let path = format!("{}-{}-multisig-tx", self.transaction_path.to_str().unwrap_or(""), self.transaction_name);
 
         write_tx_to_file(&PathBuf::from(&path), &tx_offchain)?;
         println!("the updated transaction is saved to file {}", path);
 
+        Ok(())
+    }
+}
+
+impl SignTransaction {
+    fn exec(&self, program_id: &Pubkey, signer: &Keypair) -> Result<()> {
+        let mut tx = load_tx(&self.transaction_path)?;
+
+//        println!("{:#?}", tx);
+        
+        let nonce_hash = tx.message.recent_blockhash;
+        let signers: Vec<&dyn Signer> = vec![signer];
+        tx.try_partial_sign(&signers, nonce_hash)?;
+
+        let path = format!("{}-multisig-tx-signed", self.transaction_path.to_str().unwrap_or(""));
+
+        write_tx_to_file(&PathBuf::from(&path), &tx)?;
+        println!("the updated transaction is saved to file {}", path);
+
+//        println!("signed {:#?}", tx);
+        
         Ok(())
     }
 }

@@ -104,6 +104,7 @@ pub(crate) fn do_command(
     match cmd {
         MultisigTxCommand::StartTransaction(cmd) => cmd.exec(client, program_id, payer),
         MultisigTxCommand::SignTransaction(cmd) => cmd.exec(program_id, payer),
+        MultisigTxCommand::ExecTransaction(cmd) => cmd.exec(client, program_id, payer),
         MultisigTxCommand::DemoTransaction(cmd) => {
             cmd.exec(client, program_id, &payer.pubkey())
         }
@@ -111,12 +112,17 @@ pub(crate) fn do_command(
     }
 }
 
+
 impl StartTransaction {
     fn exec(&self, client: &RpcClient, program_id: &Pubkey, rent_payer: &Keypair) -> Result<()> {
         let nonce_account = Keypair::new();
         let nonce_account_pubkey = nonce_account.pubkey();
         let rent_payer_pubkey = rent_payer.pubkey();
 
+        // save nonce_pubkey to disk for testing
+//        write_nonce_pubkey_to_file(&PathBuf::from("nonce_pubkey"), &nonce_account_pubkey)?;
+//        println!("nonce_pubkey saved");
+        
         // load and decompile offchain tx file
         let tx = load_tx(&self.transaction_path)?;
 
@@ -149,13 +155,15 @@ impl StartTransaction {
         client.send_and_confirm_transaction(&tx_onchain)?;
 
         // build off-chain tx
+        /*        
         instr_offchain.push(system_instruction::withdraw_nonce_account(
             &nonce_account_pubkey,
             &rent_payer_pubkey,
             &rent_payer_pubkey,
             nonce_rent,
         ));
-
+         */
+        
         let message = Message::new_with_nonce(
             instr_offchain,
             Some(&rent_payer_pubkey),
@@ -184,19 +192,38 @@ impl SignTransaction {
     fn exec(&self, program_id: &Pubkey, signer: &Keypair) -> Result<()> {
         let mut tx = load_tx(&self.transaction_path)?;
 
-//        println!("{:#?}", tx);
-        
         let nonce_hash = tx.message.recent_blockhash;
         let signers: Vec<&dyn Signer> = vec![signer];
         tx.try_partial_sign(&signers, nonce_hash)?;
 
-        let path = format!("{}-multisig-tx-signed", self.transaction_path.to_str().unwrap_or(""));
+        let path = format!("{}-signed", self.transaction_path.to_str().unwrap_or(""));
 
         write_tx_to_file(&PathBuf::from(&path), &tx)?;
         println!("the updated transaction is saved to file {}", path);
 
-//        println!("signed {:#?}", tx);
+        Ok(())
+    }
+}
+
+impl ExecTransaction {
+    fn exec(&self, client: &RpcClient, program_id: &Pubkey, rent_payer: &Keypair) -> Result<()> {
+        let mut tx = load_tx(&self.transaction_path)?;
         
+        // exec need to do multisig verify and pda verify
+
+//        let nonce = load_nonce_pubkey(&PathBuf::from("nonce_pubkey"))?;
+//        let nonce_account_before_exec = client.get_account(&nonce)?;
+//        println!("nonce_account_before_exec: {:#?}", nonce_account_before_exec);
+        
+        let signers: Vec<&dyn Signer> = vec![rent_payer];
+        tx.try_sign(&signers, client.get_latest_blockhash()?)?;
+        
+        let sig = client.send_and_confirm_transaction(&tx)?;
+        println!("sig: {:#?}", sig);
+
+//      let nonce_account_after_exec = client.get_account(&nonce)?;
+//        println!("nonce_account_after_exec: {:#?}", nonce_account_after_exec);
+
         Ok(())
     }
 }
@@ -218,17 +245,36 @@ impl DemoTransaction {
     }
 }
 
-fn write_tx_to_file(path: &PathBuf, tx: &Transaction) -> Result<()> {
+fn write_tx_to_file(path: &Path, tx: &Transaction) -> Result<()> {
     let file = File::create(&path)?;
     let mut writer = BufWriter::new(file);
 
     serde_json::to_writer(&mut writer, tx).map_err(|e| anyhow!("{}", e))
 }
 
-fn load_tx(path: &PathBuf) -> Result<Transaction> {
+fn load_tx(path: &Path) -> Result<Transaction> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let tx = serde_json::from_reader(reader)?;
 
     Ok(tx)
 }
+
+/*
+
+fn write_nonce_pubkey_to_file(path: &Path, pubkey: &Pubkey) -> Result<()> {
+    let file = File::create(&path)?;
+    let mut writer = BufWriter::new(file);
+
+    serde_json::to_writer(&mut writer, pubkey).map_err(|e| anyhow!("{}", e))
+}
+
+fn load_nonce_pubkey(path: &Path) -> Result<Pubkey> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let pubkey = serde_json::from_reader(reader)?;
+
+    Ok(pubkey)
+}
+
+*/

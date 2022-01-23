@@ -19,11 +19,13 @@ use structopt::StructOpt;
 
 use admin::AdminCommand;
 use multisig::MultisigCommand;
+use multisig_tx::MultisigTxCommand;
 use vault::VaultCommand;
 
 mod admin;
 mod init;
 mod multisig;
+mod multisig_tx;
 mod vault;
 
 fn main() -> Result<()> {
@@ -60,17 +62,14 @@ fn main() -> Result<()> {
             &config.keypair.pubkey(),
             cmd,
         )?,
-        Command::Multisig(cmd) => match cmd {
-            MultisigCommand::StartTransaction(cmd) => {
-                cmd.exec(&client, &program_keypair.pubkey(), &config.keypair)?;
-                return Ok(());
-            }
-            MultisigCommand::DemoTransaction(cmd) => {
-                cmd.exec(&client, &program_keypair.pubkey(), &config.keypair.pubkey())?;
-                return Ok(());
-            }
-            _ => multisig::do_command(&client, &program_keypair.pubkey(), &config.keypair, cmd)?,
-        },
+        Command::Multisig(cmd) => {
+            multisig::do_command(&client, &program_keypair.pubkey(), &config.keypair, cmd)?
+        }
+        Command::MultisigTx(cmd) => {
+            multisig_tx::do_command(&client, &program_keypair.pubkey(), &config.keypair, cmd)?;
+
+            return Ok(());
+        }
         Command::Vault(cmd) => vault::do_command(
             &client,
             &program_keypair.pubkey(),
@@ -105,6 +104,7 @@ enum Command {
     GetInstanceState { instance_name: String },
     Admin(AdminCommand),
     Multisig(MultisigCommand),
+    MultisigTx(MultisigTxCommand),
     Vault(VaultCommand),
 }
 

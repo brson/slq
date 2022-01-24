@@ -217,7 +217,7 @@ impl WithdrawFromVault {
         ))
     }
 
-    fn exec<'accounts>(&self, program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+    fn exec(&self, program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
         let accounts_iter = &mut accounts.iter();
         let payer = next_account_info(accounts_iter)?;
         let vault = next_account_info(accounts_iter)?;

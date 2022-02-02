@@ -54,6 +54,37 @@ pub struct ChangeApprovalThresholdAdmin {
 }
 
 impl ChangeApprovalThresholdAdmin {
+    pub fn build_instruction_with_admin_accounts(
+        program_id: &Pubkey,
+        rent_payer: &Pubkey,
+        admin_pubkeys: &[Pubkey],
+        instance_name: String,
+        approval_threshold: u8,
+    ) -> Result<Instruction> {
+        let (instance_pda, instance_pda_bump_seed) = make_instance_pda(program_id, &instance_name);
+
+        let instr = SlqInstruction::Admin(SlqAdminInstruction::ChangeApprovalThreshold(
+            ChangeApprovalThresholdAdmin {
+                instance_name,
+                approval_threshold,
+                instance_pda_bump_seed,
+            },
+        ));
+
+        let mut accounts = vec![
+            AccountMeta::new(*rent_payer, true),
+            AccountMeta::new(instance_pda, false),
+        ];
+
+        for pubkey in admin_pubkeys {
+            accounts.push(AccountMeta::new(*pubkey, true));
+        }
+
+        msg!("admin_pubkeys: {:#?}", accounts);
+        
+        Ok(Instruction::new_with_borsh(*program_id, &instr, accounts))
+    }
+
     pub fn build_instruction(
         program_id: &Pubkey,
         rent_payer: &Pubkey,

@@ -105,13 +105,10 @@ pub(crate) fn do_command(
         MultisigTxCommand::StartTransaction(cmd) => cmd.exec(client, program_id, payer),
         MultisigTxCommand::SignTransaction(cmd) => cmd.exec(program_id, payer),
         MultisigTxCommand::ExecTransaction(cmd) => cmd.exec(client, program_id, payer),
-        MultisigTxCommand::DemoTransaction(cmd) => {
-            cmd.exec(client, program_id, &payer.pubkey())
-        }
+        MultisigTxCommand::DemoTransaction(cmd) => cmd.exec(client, program_id, &payer.pubkey()),
         _ => todo!(),
     }
 }
-
 
 impl StartTransaction {
     fn exec(&self, client: &RpcClient, program_id: &Pubkey, rent_payer: &Keypair) -> Result<()> {
@@ -122,7 +119,7 @@ impl StartTransaction {
         // for testing
         fs::write(&PathBuf::from("nonce_keypair"), nonce_account.to_bytes())?;
         println!("nonce_keypair saved, pubkey: {:#?}", nonce_account_pubkey);
-        
+
         // load and decompile offchain tx file
         let tx = load_tx(&self.transaction_path)?;
 
@@ -139,7 +136,7 @@ impl StartTransaction {
 
         // get rent for a nonce account
         let nonce_rent = client.get_minimum_balance_for_rent_exemption(State::size())?;
-        
+
         // build on-chain tx
         let instr_onchain = system_instruction::create_nonce_account(
             &rent_payer_pubkey,
@@ -153,7 +150,7 @@ impl StartTransaction {
         tx_onchain.try_sign(&signers, client.get_latest_blockhash()?)?;
 
         client.send_and_confirm_transaction(&tx_onchain)?;
-        
+
         // build off-chain tx
         let message = Message::new_with_nonce(
             instr_offchain,
@@ -170,13 +167,20 @@ impl StartTransaction {
 
         println!("created nonce account: {:#?}", onchain_nonce_account);
         println!("nonce hash: {:#?}", nonce_hash);
-        
+
         let signers: Vec<&dyn Signer> = vec![rent_payer];
         tx_offchain.try_partial_sign(&signers, nonce_hash);
 
-        println!("tx offchain tx blockhash: {:#?}", tx_offchain.message.recent_blockhash);
-        
-        let path = format!("{}-{}-multisig-tx", self.transaction_path.to_str().unwrap_or(""), self.transaction_name);
+        println!(
+            "tx offchain tx blockhash: {:#?}",
+            tx_offchain.message.recent_blockhash
+        );
+
+        let path = format!(
+            "{}-{}-multisig-tx",
+            self.transaction_path.to_str().unwrap_or(""),
+            self.transaction_name
+        );
 
         write_tx_to_file(&PathBuf::from(&path), &tx_offchain)?;
         println!("the updated transaction is saved to file {}", path);
@@ -202,7 +206,7 @@ impl SignTransaction {
         tx.try_partial_sign(&signers, blockhash)?;
 
         println!("updated tx: {:#?}", tx);
-            
+
         let path = format!("{}-signed", self.transaction_path.to_str().unwrap_or(""));
 
         write_tx_to_file(&PathBuf::from(&path), &tx)?;
@@ -234,7 +238,8 @@ impl ExecTransaction {
             nonce_rent,
         );
 
-        let mut tx = Transaction::new_with_payer(&[instr_withdraw_nonce], Some(&rent_payer.pubkey()));
+        let mut tx =
+            Transaction::new_with_payer(&[instr_withdraw_nonce], Some(&rent_payer.pubkey()));
 
         let signers: Vec<&dyn Signer> = vec![rent_payer];
         tx.try_sign(&signers, client.get_latest_blockhash()?)?;
@@ -244,8 +249,11 @@ impl ExecTransaction {
 
         // should panic
         let nonce_account_after_withdraw = client.get_account(&nonce.pubkey())?;
-        println!("nonce_account_after_withdraw: {:#?}", nonce_account_after_withdraw);
-        
+        println!(
+            "nonce_account_after_withdraw: {:#?}",
+            nonce_account_after_withdraw
+        );
+
         Ok(())
     }
 }
@@ -255,19 +263,18 @@ impl DemoTransaction {
         let another_signer = fs::read(&PathBuf::from("another_signer"))?;
         let another_signer = Keypair::from_bytes(&another_signer)?;
 
-        let instr = slq::admin::ChangeApprovalThresholdAdmin::build_instruction_with_admin_accounts(
-            program_id,
-            rent_payer,
-            &vec![
-                another_signer.pubkey(),
-            ],
-            "foo".to_string(),
-            1,
-        )?;
+        let instr =
+            slq::admin::ChangeApprovalThresholdAdmin::build_instruction_with_admin_accounts(
+                program_id,
+                rent_payer,
+                &vec![another_signer.pubkey()],
+                "foo".to_string(),
+                1,
+            )?;
 
         let tx = Transaction::new_with_payer(&[instr], Some(rent_payer));
         println!("demo tx: {:#?}", tx);
-        
+
         write_tx_to_file(&self.transaction_path, &tx)?;
 
         Ok(())
@@ -288,6 +295,3 @@ fn load_tx(path: &Path) -> Result<Transaction> {
 
     Ok(tx)
 }
-
-
-

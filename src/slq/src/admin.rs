@@ -81,7 +81,7 @@ impl ChangeApprovalThresholdAdmin {
         }
 
         msg!("admin_pubkeys: {:#?}", accounts);
-        
+
         Ok(Instruction::new_with_borsh(*program_id, &instr, accounts))
     }
 

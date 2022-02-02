@@ -267,7 +267,7 @@ impl DemoTransaction {
             slq::admin::ChangeApprovalThresholdAdmin::build_instruction_with_admin_accounts(
                 program_id,
                 rent_payer,
-                &vec![another_signer.pubkey()],
+                &[another_signer.pubkey()],
                 "foo".to_string(),
                 1,
             )?;

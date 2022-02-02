@@ -76,9 +76,11 @@ impl ChangeApprovalThresholdAdmin {
             AccountMeta::new(instance_pda, false),
         ];
 
-        for pubkey in admin_pubkeys {
-            accounts.push(AccountMeta::new(*pubkey, true));
-        }
+        accounts.extend(
+            admin_pubkeys
+                .iter()
+                .map(|admin_pubkey| AccountMeta::new(*admin_pubkey, true)),
+        );
 
         msg!("admin_pubkeys: {:#?}", accounts);
 

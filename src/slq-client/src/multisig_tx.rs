@@ -134,6 +134,13 @@ impl StartTransaction {
             instr_offchain.push(decompiled_instr);
         }
 
+        let instr_withdraw_nonce = slq::nonce::WithdrawNonceAccount::build_instruction(
+            program_id,
+            &rent_payer_pubkey,
+            &nonce_account_pubkey,
+        )?;
+        instr_offchain.push(instr_withdraw_nonce);
+
         // get rent for a nonce account
         let nonce_rent = client.get_minimum_balance_for_rent_exemption(State::size())?;
 
@@ -151,6 +158,30 @@ impl StartTransaction {
 
         client.send_and_confirm_transaction(&tx_onchain)?;
 
+        /*
+                // change nonce authority to slq onchain program
+                {
+                    let onchain_nonce_account = client.get_account(&nonce_account_pubkey)?;
+                    let nonce_data = solana_client::nonce_utils::data_from_account(&onchain_nonce_account)?;
+                    println!("created nonce account before changing authority: {:#?}", onchain_nonce_account);
+                    println!("nonce data: {:#?}", nonce_data);
+
+                    let instr_change_authority = system_instruction::authorize_nonce_account(
+                        &nonce_account_pubkey,
+                        &rent_payer_pubkey,
+                        &Pubkey::from_str("5n5nVHhyccUpChNmBw6bEFTJwLKvRMbaWHgg3WCYZfjV")?, // &program_id,
+                    );
+                    let mut tx_change_authority = Transaction::new_with_payer(&[instr_change_authority], Some(&rent_payer_pubkey));
+                    let signers: Vec<&dyn Signer> = vec![rent_payer];
+                    tx_change_authority.try_sign(&signers, client.get_latest_blockhash()?)?;
+                    client.send_and_confirm_transaction(&tx_change_authority)?;
+
+                    let onchain_nonce_account = client.get_account(&nonce_account_pubkey)?;
+                    let nonce_data = solana_client::nonce_utils::data_from_account(&onchain_nonce_account)?;
+                    println!("nonce account after changing authority: {:#?}", onchain_nonce_account);
+                    println!("nonce data: {:#?}", nonce_data);
+                }
+        */
         // build off-chain tx
         let message = Message::new_with_nonce(
             instr_offchain,
@@ -158,26 +189,17 @@ impl StartTransaction {
             &nonce_account_pubkey,
             &rent_payer_pubkey,
         );
-
         let mut tx_offchain = Transaction::new_unsigned(message);
 
         let onchain_nonce_account = client.get_account(&nonce_account_pubkey)?;
         let nonce_data = solana_client::nonce_utils::data_from_account(&onchain_nonce_account)?;
         let nonce_hash = nonce_data.blockhash;
 
-        println!("created nonce account: {:#?}", onchain_nonce_account);
-        println!("nonce hash: {:#?}", nonce_hash);
-
         let signers: Vec<&dyn Signer> = vec![rent_payer];
         tx_offchain.try_partial_sign(&signers, nonce_hash);
 
-        println!(
-            "tx offchain tx blockhash: {:#?}",
-            tx_offchain.message.recent_blockhash
-        );
-
         let path = format!(
-            "{}-{}-multisig-tx",
+            "{}-{}-start-tx",
             self.transaction_path.to_str().unwrap_or(""),
             self.transaction_name
         );
@@ -224,29 +246,30 @@ impl ExecTransaction {
 
         client.send_and_confirm_transaction(&tx)?;
 
-        // withdraw nonce
-        println!("withdraw from nonce account");
-
         let nonce = fs::read(&PathBuf::from("nonce_keypair"))?;
         let nonce = Keypair::from_bytes(&nonce)?;
 
-        let nonce_rent = client.get_minimum_balance_for_rent_exemption(State::size())?;
-        let instr_withdraw_nonce = system_instruction::withdraw_nonce_account(
-            &nonce.pubkey(),
-            &rent_payer.pubkey(),
-            &rent_payer.pubkey(),
-            nonce_rent,
-        );
+        /*
+                // withdraw nonce
+                println!("withdraw from nonce account");
 
-        let mut tx =
-            Transaction::new_with_payer(&[instr_withdraw_nonce], Some(&rent_payer.pubkey()));
+                let nonce_rent = client.get_minimum_balance_for_rent_exemption(State::size())?;
+                let instr_withdraw_nonce = system_instruction::withdraw_nonce_account(
+                    &nonce.pubkey(),
+                    &rent_payer.pubkey(),
+                    &rent_payer.pubkey(),
+                    nonce_rent,
+                );
 
-        let signers: Vec<&dyn Signer> = vec![rent_payer];
-        tx.try_sign(&signers, client.get_latest_blockhash()?)?;
+                let mut tx =
+                    Transaction::new_with_payer(&[instr_withdraw_nonce], Some(&rent_payer.pubkey()));
 
-        let sig = client.send_and_confirm_transaction(&tx)?;
-        println!("withdraw sig: {:#?}", sig);
+                let signers: Vec<&dyn Signer> = vec![rent_payer];
+                tx.try_sign(&signers, client.get_latest_blockhash()?)?;
 
+                let sig = client.send_and_confirm_transaction(&tx)?;
+                println!("withdraw sig: {:#?}", sig);
+        */
         // should panic
         let nonce_account_after_withdraw = client.get_account(&nonce.pubkey())?;
         println!(

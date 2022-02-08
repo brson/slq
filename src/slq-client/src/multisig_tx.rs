@@ -249,27 +249,26 @@ impl ExecTransaction {
         let nonce = fs::read(&PathBuf::from("nonce_keypair"))?;
         let nonce = Keypair::from_bytes(&nonce)?;
 
-        /*
-                // withdraw nonce
-                println!("withdraw from nonce account");
+        // withdraw nonce
+        println!("withdraw from nonce account");
 
-                let nonce_rent = client.get_minimum_balance_for_rent_exemption(State::size())?;
-                let instr_withdraw_nonce = system_instruction::withdraw_nonce_account(
-                    &nonce.pubkey(),
-                    &rent_payer.pubkey(),
-                    &rent_payer.pubkey(),
-                    nonce_rent,
-                );
+        let nonce_rent = client.get_minimum_balance_for_rent_exemption(State::size())?;
+        let instr_withdraw_nonce = system_instruction::withdraw_nonce_account(
+            &nonce.pubkey(),
+            &rent_payer.pubkey(),
+            &rent_payer.pubkey(),
+            nonce_rent,
+        );
 
-                let mut tx =
-                    Transaction::new_with_payer(&[instr_withdraw_nonce], Some(&rent_payer.pubkey()));
+        let mut tx =
+            Transaction::new_with_payer(&[instr_withdraw_nonce], Some(&rent_payer.pubkey()));
 
-                let signers: Vec<&dyn Signer> = vec![rent_payer];
-                tx.try_sign(&signers, client.get_latest_blockhash()?)?;
+        let signers: Vec<&dyn Signer> = vec![rent_payer];
+        tx.try_sign(&signers, client.get_latest_blockhash()?)?;
 
-                let sig = client.send_and_confirm_transaction(&tx)?;
-                println!("withdraw sig: {:#?}", sig);
-        */
+        let sig = client.send_and_confirm_transaction(&tx)?;
+        println!("withdraw sig: {:#?}", sig);
+
         // should panic
         let nonce_account_after_withdraw = client.get_account(&nonce.pubkey())?;
         println!(
